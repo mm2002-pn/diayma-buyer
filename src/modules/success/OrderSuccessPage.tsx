@@ -18,7 +18,7 @@ export function OrderSuccessPage() {
   const saleSlug = state.saleSlug;
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col p-6">
+    <div className="flex-1 flex flex-col p-6">
       <div className="flex-1 flex flex-col items-center justify-center text-center">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}

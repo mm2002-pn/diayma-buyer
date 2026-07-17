@@ -8,27 +8,39 @@
   }
   body {
     margin: 0;
-    @apply bg-cream text-forest-700 antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    color: #1A1815;
+    @apply bg-cream antialiased;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-feature-settings: 'ss01', 'ss02'; /* Manrope stylistic sets */
   }
-  /* Empêche le zoom sur double-tap iOS + le rebond */
   html {
     -webkit-text-size-adjust: 100%;
     touch-action: manipulation;
     overscroll-behavior: none;
   }
+  /* Fraunces optical size + subtle serif details */
+  .font-display, .font-serif {
+    font-optical-sizing: auto;
+    font-feature-settings: 'ss01';
+  }
 }
 
 @layer components {
-  /* Bouton principal typiquement pleine largeur, gros, arrondi */
+  /* Bouton principal — actions primaires (Commander, Continuer, Payer) */
   .btn-primary {
-    @apply w-full h-14 rounded-2xl bg-forest text-white text-lg font-semibold
+    @apply w-full h-14 rounded-full bg-forest text-white text-base font-semibold tracking-tight
            flex items-center justify-center gap-2 shadow-soft active:scale-[0.98]
-           transition-transform disabled:opacity-60 disabled:pointer-events-none;
+           transition-all disabled:opacity-40 disabled:pointer-events-none hover:bg-forest/90;
   }
   .btn-secondary {
-    @apply w-full h-14 rounded-2xl bg-white text-forest text-lg font-semibold
+    @apply w-full h-14 rounded-full bg-white text-forest text-base font-semibold tracking-tight
            border border-forest/20 flex items-center justify-center gap-2
-           shadow-soft active:scale-[0.98] transition-transform;
+           shadow-soft active:scale-[0.98] transition-all hover:border-forest/40;
+  }
+  /* Bouton "sm" — actions secondaires (Ajouter au panier sur card) */
+  .btn-sm {
+    @apply h-10 px-4 rounded-full bg-forest text-white text-sm font-semibold
+           flex items-center justify-center gap-1.5 hover:bg-forest/90 transition-colors
+           disabled:opacity-40 disabled:pointer-events-none;
   }
 }

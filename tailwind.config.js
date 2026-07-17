@@ -4,30 +4,46 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Palette Diayma acheteur (crème + vert profond)
+        // Palette Diayma — chaleur boutique sénégalaise, contraste raffiné
         cream: {
           DEFAULT: '#F5EDD9',
           50:  '#FBF6EB',
-          100: '#F7EFD9',
-          200: '#F1E5C3',
+          100: '#F5EDD9',
+          200: '#EADFC1',
+          300: '#DCCEA6',
         },
         forest: {
-          DEFAULT: '#0F5B3A',
-          50:  '#E7F0EB',
-          600: '#0C4A2F',
-          700: '#093B25',
+          DEFAULT: '#1F4D3A',
+          50:  '#EAF0EC',
+          100: '#D2DFD5',
+          400: '#2E6449',
+          600: '#173A2C',
+          700: '#0F2A1F',
+          800: '#0A1E17',
         },
         gold: {
-          DEFAULT: '#C6A961',
+          DEFAULT: '#B8945F',
           50:  '#F6EFDC',
+          100: '#EEE0B7',
+          400: '#C6A961',
+          600: '#9B7C4F',
         },
-        // Actions paiement (couleurs officielles)
+        clay: {
+          DEFAULT: '#C24E2F',
+          50:  '#FBEBE5',
+        },
+        ink: '#1A1815',
+        // Paiements
         orange_money: '#F58220',
         wave:         '#1BC7C7',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        sans: ['Manrope', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['Fraunces', 'Georgia', 'serif'],
+        serif: ['Fraunces', 'Georgia', 'serif'],
+      },
+      letterSpacing: {
+        tightest: '-0.04em',
       },
       borderRadius: {
         xl: '1rem',

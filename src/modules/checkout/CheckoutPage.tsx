@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,9 +36,15 @@ const PAYMENTS: { id: PaymentMethod; label: string; bg: string; icon: string }[]
 export function CheckoutPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
   const navigate = useNavigate();
-  const items = useCart((s) => s.itemsFor(saleSlug!));
+  // Sélecteurs stables — s.items est la référence brute du store ; on filtre via useMemo
+  // pour éviter que le selector renvoie un nouveau tableau à chaque render (boucle infinie Zustand).
+  const allItems = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const removeItem = useCart((s) => s.remove);
+  const items = useMemo(
+    () => (saleSlug ? allItems.filter((i) => i.saleSlug === saleSlug) : []),
+    [allItems, saleSlug]
+  );
   const totalCfa = items.reduce((acc, i) => acc + i.priceCfa * i.quantity, 0);
 
   const [step, setStep] = useState<0 | 1 | 2>(0); // 0=Panier, 1=Coord, 2=Paiement
@@ -63,7 +69,7 @@ export function CheckoutPage() {
 
   if (items.length === 0 && step === 0) {
     return (
-      <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-6xl mb-4">🛍️</div>
         <div className="text-forest text-lg font-semibold mb-2">Ton panier est vide</div>
         <div className="text-forest/60 text-sm mb-8">Ajoute des produits pour commander.</div>
@@ -87,9 +93,9 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
+    <div className="flex-1 flex flex-col overflow-y-auto md:max-w-2xl md:mx-auto md:w-full md:py-8">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 md:px-0">
         <button
           onClick={() => (step === 0 ? navigate(-1) : setStep((step - 1) as 0 | 1 | 2))}
           className="p-2 -ml-2 text-forest"
@@ -104,7 +110,7 @@ export function CheckoutPage() {
       </div>
 
       {/* Progress */}
-      <div className="flex gap-1 px-4 mb-2">
+      <div className="flex gap-1 px-4 mb-2 md:px-0">
         {[0, 1, 2].map((s) => (
           <div
             key={s}
@@ -113,7 +119,7 @@ export function CheckoutPage() {
         ))}
       </div>
 
-      <div className="flex-1 flex flex-col px-4 py-4">
+      <div className="flex-1 flex flex-col px-4 py-4 md:px-0">
         <AnimatePresence mode="wait">
           {/* Étape 0 : Panier */}
           {step === 0 && (

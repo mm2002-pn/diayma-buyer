@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -8,6 +8,8 @@ import { ShopHeader } from '@/components/ShopHeader';
 import { shopApi } from './shop.api';
 import { useCart } from '@/stores/cart.store';
 import { formatCfa } from '@/lib/utils';
+import { useIsDesktop } from '@/lib/useIsDesktop';
+import { CatalogDesktop } from './CatalogDesktop';
 import type { Product, ProductVariant } from '@/types/api';
 
 function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
@@ -102,6 +104,8 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
 
 export function CatalogPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
+  const navigate = useNavigate();
+  const isDesktop = useIsDesktop();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'center' });
   const [selectedIdx, setSelectedIdx] = useState(0);
 
@@ -111,21 +115,47 @@ export function CatalogPage() {
     enabled: !!saleSlug,
   });
 
-  const { data: lives = [] } = useQuery({
+  // useQuery : évite `= []` en destructuring (référence différente à chaque render).
+  const livesQuery = useQuery({
     queryKey: ['active-lives'],
     queryFn: shopApi.activeLives,
   });
+  const lives = livesQuery.data;
+
+  // Cart : sélection stable de la référence brute, dérivation via useMemo.
+  const allCartItems = useCart((s) => s.items);
+  const { cartTotalQty, cartTotalCfa } = useMemo(() => {
+    const items = saleSlug ? allCartItems.filter((i) => i.saleSlug === saleSlug) : [];
+    return {
+      cartTotalQty: items.reduce((a, i) => a + i.quantity, 0),
+      cartTotalCfa: items.reduce((a, i) => a + i.priceCfa * i.quantity, 0),
+    };
+  }, [allCartItems, saleSlug]);
+
+  // Handler stable pour éviter un ré-abonnement embla à chaque render.
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIdx(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on('select', onSelect);
+    return () => {
+      emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cream">
+      <div className="flex-1 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-forest" />
       </div>
     );
   }
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-cream">
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="text-forest text-lg font-semibold">Boutique introuvable</div>
         <div className="text-forest/60 text-sm mt-2">Vérifie le lien avec la vendeuse.</div>
       </div>
@@ -133,55 +163,67 @@ export function CatalogPage() {
   }
 
   const { seller, products } = data;
-  const liveActive = lives.some((l) => l.sellerId === seller.id && l.status === 'LIVE');
+  const liveActive = (lives ?? []).some((l) => l.sellerId === seller.id && l.status === 'LIVE');
 
-  emblaApi?.on('select', () => setSelectedIdx(emblaApi.selectedScrollSnap()));
+  // Desktop → site e-commerce classique (grid de cards)
+  if (isDesktop) {
+    return (
+      <CatalogDesktop
+        seller={seller}
+        products={products}
+        saleSlug={saleSlug!}
+        liveActive={liveActive}
+        cartTotalQty={cartTotalQty}
+        cartTotalCfa={cartTotalCfa}
+      />
+    );
+  }
 
+  // Mobile → parcours swipe TikTok-like
   return (
-    <div className="min-h-screen flex flex-col bg-cream">
+    <div className="flex-1 flex flex-col overflow-y-auto">
       <ShopHeader seller={seller} liveActive={liveActive} />
 
       <div className="flex-1 flex flex-col">
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex touch-pan-y">
-            {products.map((p) => (
-              <ProductSlide key={p.id} p={p} saleSlug={saleSlug!} />
-            ))}
-          </div>
-        </div>
+        {products.length === 1 ? (
+          <ProductSlide p={products[0]} saleSlug={saleSlug!} />
+        ) : (
+          <>
+            <div className="overflow-hidden" ref={emblaRef}>
+              <div className="flex touch-pan-y">
+                {products.map((p) => (
+                  <ProductSlide key={p.id} p={p} saleSlug={saleSlug!} />
+                ))}
+              </div>
+            </div>
 
-        {/* Dots indicateur */}
-        <div className="flex justify-center gap-1.5 py-3">
-          {products.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i === selectedIdx ? 'w-6 bg-forest' : 'w-1.5 bg-forest/30'
-              }`}
-            />
-          ))}
-        </div>
+            {/* Dots indicateur */}
+            <div className="flex justify-center gap-1.5 py-3">
+              {products.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === selectedIdx ? 'w-6 bg-forest' : 'w-1.5 bg-forest/30'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="text-center text-xs text-forest/50 pb-4">
-          Swipe pour découvrir · {products.length} produit{products.length > 1 ? 's' : ''}
+          {products.length > 1 ? `Swipe pour découvrir · ${products.length} produits` : '1 produit'}
         </div>
       </div>
 
-      <CartFAB saleSlug={saleSlug!} totalItems={useCart((s) => s.itemsFor(saleSlug!).reduce((a, i) => a + i.quantity, 0))} />
-    </div>
-  );
-}
-
-function CartFAB({ saleSlug, totalItems }: { saleSlug: string; totalItems: number }) {
-  const navigate = useNavigate();
-  const total = useCart((s) => s.itemsFor(saleSlug).reduce((a, i) => a + i.priceCfa * i.quantity, 0));
-  if (totalItems === 0) return null;
-  return (
-    <div className="sticky bottom-0 inset-x-0 p-4 bg-cream/95 backdrop-blur border-t border-forest/10">
-      <button className="btn-primary" onClick={() => navigate(`/s/${saleSlug}/checkout`)}>
-        <ShoppingCart className="h-5 w-5" />
-        Voir mon panier ({totalItems}) · {formatCfa(total)}
-      </button>
+      {cartTotalQty > 0 && (
+        <div className="sticky bottom-0 inset-x-0 p-4 bg-cream/95 backdrop-blur border-t border-forest/10">
+          <button className="btn-primary" onClick={() => navigate(`/s/${saleSlug}/checkout`)}>
+            <ShoppingCart className="h-5 w-5" />
+            Voir mon panier ({cartTotalQty}) · {formatCfa(cartTotalCfa)}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
