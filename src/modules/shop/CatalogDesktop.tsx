@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ImageOff, MapPin, Radio, Sparkles, ShoppingCart } from 'lucide-react';
 
 import { formatCfa } from '@/lib/utils';
 import { useCart } from '@/stores/cart.store';
-import type { Product, ProductVariant, SellerBrief } from '@/types/api';
+import type { Product, ProductVariant, SellerBrief, VariantType } from '@/types/api';
+
+const VARIANT_LABELS: Record<VariantType, string> = {
+  COULEUR: 'Couleur',
+  TAILLE: 'Taille',
+  POINTURE: 'Pointure',
+};
 
 interface Props {
   seller: SellerBrief;
@@ -21,30 +27,51 @@ interface Props {
  */
 function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
   const add = useCart((s) => s.add);
-  const navigate = useNavigate();
   const [imgLoaded, setImgLoaded] = useState(false);
-  const hasVariants = p.variants.length > 0;
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    hasVariants ? p.variants.find((v) => v.stock > 0) ?? p.variants[0] : null
-  );
+  const [added, setAdded] = useState(false);
+
+  const variantsByType = useMemo(() => {
+    const map = new Map<VariantType, ProductVariant[]>();
+    for (const v of p.variants) {
+      if (!map.has(v.type)) map.set(v.type, []);
+      map.get(v.type)!.push(v);
+    }
+    return map;
+  }, [p.variants]);
+
+  const types = Array.from(variantsByType.keys());
+  const hasVariants = types.length > 0;
+
+  const [selectedByType, setSelectedByType] = useState<Map<VariantType, ProductVariant>>(() => {
+    const init = new Map<VariantType, ProductVariant>();
+    for (const [type, variants] of variantsByType) {
+      const first = variants.find((v) => v.stock > 0) ?? variants[0];
+      if (first) init.set(type, first);
+    }
+    return init;
+  });
 
   const isOutOfStock = hasVariants
-    ? (selectedVariant?.stock ?? 0) === 0
+    ? types.some((t) => (selectedByType.get(t)?.stock ?? 0) === 0)
     : p.stock === 0;
 
+  const primaryVariant = types.length > 0 ? selectedByType.get(types[0]) ?? null : null;
+  const variantLabel = types.map((t) => selectedByType.get(t)?.value).filter(Boolean).join(' · ');
+
   function handleAdd() {
-    if (isOutOfStock) return;
+    if (isOutOfStock || added) return;
     add({
       productId: p.id,
-      variantId: selectedVariant?.id ?? null,
-      variantLabel: selectedVariant?.value ?? null,
+      variantId: primaryVariant?.id ?? null,
+      variantLabel: variantLabel || null,
       productName: p.name,
       photoUrl: p.photoUrl,
       priceCfa: p.priceCfa,
       sellerId: p.sellerId,
       saleSlug,
     });
-    navigate(`/s/${saleSlug}/checkout`);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   }
 
   return (
@@ -58,7 +85,7 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
             )}
             <img
               src={p.photoUrl}
-              alt={p.name}
+              alt={p.name ?? ''}
               onLoad={() => setImgLoaded(true)}
               className={`h-full w-full object-cover transition-opacity duration-500 ${
                 imgLoaded ? 'opacity-100' : 'opacity-0'
@@ -81,30 +108,49 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
 
       {/* Content compact */}
       <div className="p-3 space-y-2 flex-1 flex flex-col">
-        <div className="font-display text-base font-semibold text-forest line-clamp-1">
-          {p.name}
-        </div>
+        {p.name && (
+          <div className="font-display text-base font-semibold text-forest line-clamp-1">
+            {p.name}
+          </div>
+        )}
 
         {hasVariants && (
-          <div className="flex flex-wrap gap-1.5">
-            {p.variants.map((v) => {
-              const active = selectedVariant?.id === v.id;
-              const disabled = v.stock === 0;
+          <div className="space-y-2">
+            {types.map((type) => {
+              const variants = variantsByType.get(type)!;
+              const selected = selectedByType.get(type);
               return (
-                <button
-                  key={v.id}
-                  disabled={disabled}
-                  onClick={() => setSelectedVariant(v)}
-                  className={`min-w-[36px] h-7 px-2 rounded-md text-xs font-medium border transition ${
-                    active
-                      ? 'bg-forest text-white border-forest'
-                      : disabled
-                      ? 'text-forest/30 border-forest/10 line-through'
-                      : 'bg-white text-forest border-forest/20 hover:border-forest/40'
-                  }`}
-                >
-                  {v.value}
-                </button>
+                <div key={type}>
+                  <div className="text-[10px] font-medium text-forest/50 uppercase tracking-wider mb-1">
+                    {VARIANT_LABELS[type]}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {variants.map((v) => {
+                      const active = selected?.id === v.id;
+                      const disabled = v.stock === 0;
+                      return (
+                        <button
+                          key={v.id}
+                          disabled={disabled}
+                          onClick={() => {
+                            const next = new Map(selectedByType);
+                            next.set(type, v);
+                            setSelectedByType(next);
+                          }}
+                          className={`min-w-[36px] h-7 px-2 rounded-md text-xs font-medium border transition ${
+                            active
+                              ? 'bg-forest text-white border-forest'
+                              : disabled
+                              ? 'text-forest/30 border-forest/10 line-through'
+                              : 'bg-white text-forest border-forest/20 hover:border-forest/40'
+                          }`}
+                        >
+                          {v.value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -119,13 +165,20 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
           >
             Rupture
           </button>
+        ) : added ? (
+          <button
+            disabled
+            className="w-full h-10 rounded-full bg-green-600 text-white font-semibold text-sm"
+          >
+            ✓ Ajouté au panier
+          </button>
         ) : (
           <button
             onClick={handleAdd}
             className="w-full h-10 rounded-full bg-forest text-white font-semibold text-sm flex items-center justify-center gap-1.5 hover:bg-forest/90 active:scale-[0.98] transition"
           >
             <ShoppingCart className="h-4 w-4" />
-            Commander
+            Ajouter au panier
           </button>
         )}
       </div>

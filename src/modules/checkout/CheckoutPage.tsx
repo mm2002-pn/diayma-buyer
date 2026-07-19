@@ -61,7 +61,7 @@ export function CheckoutPage() {
     onSuccess: (data) => {
       clear();
       navigate(`/order/success/${data.order.id}`, {
-        state: { order: data.order, saleSlug },
+        state: { order: data.order, saleSlug, buyerFirstName: coords?.firstName },
       });
     },
     onError: (e) => setError(extractError(e, 'Commande impossible')),

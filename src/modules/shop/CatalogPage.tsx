@@ -10,33 +10,68 @@ import { useCart } from '@/stores/cart.store';
 import { formatCfa } from '@/lib/utils';
 import { useIsDesktop } from '@/lib/useIsDesktop';
 import { CatalogDesktop } from './CatalogDesktop';
-import type { Product, ProductVariant } from '@/types/api';
+import type { Product, ProductVariant, VariantType } from '@/types/api';
+
+const VARIANT_LABELS: Record<VariantType, string> = {
+  COULEUR: 'Couleur',
+  TAILLE: 'Taille',
+  POINTURE: 'Pointure',
+};
 
 function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
   const add = useCart((s) => s.add);
-  const navigate = useNavigate();
-  const hasVariants = p.variants.length > 0;
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    hasVariants ? p.variants.find((v) => v.stock > 0) ?? p.variants[0] : null
-  );
+  const [added, setAdded] = useState(false);
 
+  // Grouper variantes par type
+  const variantsByType = useMemo(() => {
+    const map = new Map<VariantType, ProductVariant[]>();
+    for (const v of p.variants) {
+      if (!map.has(v.type)) map.set(v.type, []);
+      map.get(v.type)!.push(v);
+    }
+    return map;
+  }, [p.variants]);
+
+  const types = Array.from(variantsByType.keys());
+  const hasVariants = types.length > 0;
+
+  // Une sélection par type — initialisée sur le premier en stock
+  const [selectedByType, setSelectedByType] = useState<Map<VariantType, ProductVariant>>(() => {
+    const init = new Map<VariantType, ProductVariant>();
+    for (const [type, variants] of variantsByType) {
+      const first = variants.find((v) => v.stock > 0) ?? variants[0];
+      if (first) init.set(type, first);
+    }
+    return init;
+  });
+
+  // Toutes les sélections sont faites ?
+  const allSelected = types.every((t) => selectedByType.has(t));
+
+  // Stock disponible = tous les types sélectionnés ont du stock
   const isOutOfStock = hasVariants
-    ? (selectedVariant?.stock ?? 0) === 0
+    ? types.some((t) => (selectedByType.get(t)?.stock ?? 0) === 0)
     : p.stock === 0;
 
+  // Pour l'API on envoie un seul variantId.
+  // Si un seul type → celui sélectionné. Si plusieurs → le premier type sélectionné.
+  const primaryVariant = types.length > 0 ? selectedByType.get(types[0]) ?? null : null;
+  const variantLabel = types.map((t) => selectedByType.get(t)?.value).filter(Boolean).join(' · ');
+
   function handleAdd() {
-    if (isOutOfStock) return;
+    if (isOutOfStock || !allSelected || added) return;
     add({
       productId: p.id,
-      variantId: selectedVariant?.id ?? null,
-      variantLabel: selectedVariant?.value ?? null,
+      variantId: primaryVariant?.id ?? null,
+      variantLabel: variantLabel || null,
       productName: p.name,
       photoUrl: p.photoUrl,
       priceCfa: p.priceCfa,
       sellerId: p.sellerId,
       saleSlug,
     });
-    navigate(`/s/${saleSlug}/checkout`);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   }
 
   return (
@@ -44,7 +79,7 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
       <div className="rounded-2xl bg-white shadow-card overflow-hidden">
         <div className="relative aspect-[4/5] w-full bg-cream-100">
           {p.photoUrl ? (
-            <img src={p.photoUrl} alt={p.name} className="h-full w-full object-cover" />
+            <img src={p.photoUrl} alt={p.name ?? ''} className="h-full w-full object-cover" />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-forest/30">
               <ImageOff className="h-16 w-16" />
@@ -59,28 +94,46 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="text-xl font-semibold text-forest">{p.name}</div>
+          {p.name && <div className="text-xl font-semibold text-forest">{p.name}</div>}
 
+          {/* Variantes groupées par type */}
           {hasVariants && (
-            <div className="flex flex-wrap gap-2">
-              {p.variants.map((v) => {
-                const active = selectedVariant?.id === v.id;
-                const disabled = v.stock === 0;
+            <div className="space-y-3">
+              {types.map((type) => {
+                const variants = variantsByType.get(type)!;
+                const selected = selectedByType.get(type);
                 return (
-                  <button
-                    key={v.id}
-                    disabled={disabled}
-                    onClick={() => setSelectedVariant(v)}
-                    className={`min-w-[52px] h-10 px-3 rounded-lg text-sm font-medium border transition ${
-                      active
-                        ? 'bg-forest text-white border-forest'
-                        : disabled
-                        ? 'text-forest/30 border-forest/10 line-through'
-                        : 'bg-white text-forest border-forest/20'
-                    }`}
-                  >
-                    {v.value}
-                  </button>
+                  <div key={type}>
+                    <div className="text-xs font-medium text-forest/60 uppercase tracking-wider mb-1.5">
+                      {VARIANT_LABELS[type]}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {variants.map((v) => {
+                        const active = selected?.id === v.id;
+                        const disabled = v.stock === 0;
+                        return (
+                          <button
+                            key={v.id}
+                            disabled={disabled}
+                            onClick={() => {
+                              const next = new Map(selectedByType);
+                              next.set(type, v);
+                              setSelectedByType(next);
+                            }}
+                            className={`min-w-[52px] h-10 px-3 rounded-lg text-sm font-medium border transition ${
+                              active
+                                ? 'bg-forest text-white border-forest'
+                                : disabled
+                                ? 'text-forest/30 border-forest/10 line-through'
+                                : 'bg-white text-forest border-forest/20'
+                            }`}
+                          >
+                            {v.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -90,10 +143,14 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
             <button disabled className="btn-primary bg-forest/30">
               Rupture de stock
             </button>
+          ) : added ? (
+            <button disabled className="btn-primary bg-green-600">
+              ✓ Ajouté au panier
+            </button>
           ) : (
             <button className="btn-primary" onClick={handleAdd}>
               <ShoppingCart className="h-5 w-5" />
-              Commander
+              Ajouter au panier
             </button>
           )}
         </div>

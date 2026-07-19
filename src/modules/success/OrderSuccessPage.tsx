@@ -2,20 +2,14 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Check, Phone, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-interface StateOrder {
-  id: number;
-  buyerPhone?: string;
-  buyerName?: string;
-  totalCfa?: number;
-}
 
 export function OrderSuccessPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const state = (location.state as { order?: StateOrder; saleSlug?: string } | null) ?? {};
-  const order = state.order;
+  const state = (location.state as { saleSlug?: string; buyerFirstName?: string } | null) ?? {};
   const saleSlug = state.saleSlug;
+  const buyerFirstName = state.buyerFirstName;
 
   return (
     <div className="flex-1 flex flex-col p-6">
@@ -49,8 +43,8 @@ export function OrderSuccessPage() {
             <Truck className="h-10 w-10 text-forest mx-auto" />
           </div>
           <div className="text-3xl font-bold text-forest mt-2 font-display">Livré en 24h</div>
-          {order?.buyerName && (
-            <div className="text-sm text-forest/60 mt-2">Bonjour {order.buyerName.split(' ')[0]}, on te contacte très vite.</div>
+          {buyerFirstName && (
+            <div className="text-sm text-forest/60 mt-2">Bonjour {buyerFirstName}, on te contacte très vite.</div>
           )}
         </motion.div>
       </div>

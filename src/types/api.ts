@@ -1,4 +1,4 @@
-export type VariantType = 'COLOR' | 'SIZE';
+export type VariantType = 'COULEUR' | 'TAILLE' | 'POINTURE';
 
 export interface ProductVariant {
   id: number;
@@ -21,7 +21,7 @@ export interface Product {
   id: number;
   sellerId: number;
   seller?: SellerBrief;
-  name: string;
+  name: string | null;
   priceCfa: number;
   photoUrl: string | null;
   stock: number;
@@ -53,9 +53,7 @@ export interface OrderResponse {
   order: {
     id: number;
     sellerId: number;
-    buyerName: string;
     buyerPhone: string;
-    buyerAddress: string;
     paymentMethod: PaymentMethod;
     status: string;
     totalCfa: number;
