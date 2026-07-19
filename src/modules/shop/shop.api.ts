@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { Product, ProductListResponse, Live } from '@/types/api';
+import type { Product, Live } from '@/types/api';
 
 export const shopApi = {
   bySaleSlug: async (slug: string): Promise<{ seller: NonNullable<Product['seller']>; products: Product[] }> => {
