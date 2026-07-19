@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
-import { ShoppingCart, Loader2, ImageOff } from 'lucide-react';
+import { ShoppingCart, Loader2, ImageOff, Radio } from 'lucide-react';
 
 import { ShopHeader } from '@/components/ShopHeader';
 import { shopApi } from './shop.api';
@@ -176,6 +176,7 @@ export function CatalogPage() {
   const livesQuery = useQuery({
     queryKey: ['active-lives'],
     queryFn: shopApi.activeLives,
+    refetchInterval: 30_000,
   });
   const lives = livesQuery.data;
 
@@ -203,7 +204,7 @@ export function CatalogPage() {
     };
   }, [emblaApi, onSelect]);
 
-  if (isLoading) {
+  if (isLoading || livesQuery.isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-forest" />
@@ -221,6 +222,34 @@ export function CatalogPage() {
 
   const { seller, products } = data;
   const liveActive = (lives ?? []).some((l) => l.sellerId === seller.id && l.status === 'LIVE');
+
+  // Pas de live en cours → écran d'attente
+  if (!liveActive) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center bg-cream">
+        <div className="relative">
+          <div className="h-24 w-24 rounded-full bg-forest/10 flex items-center justify-center">
+            <Radio className="h-10 w-10 text-forest/30" />
+          </div>
+        </div>
+        <div>
+          <div className="font-display text-2xl font-semibold text-forest mb-2">
+            {seller.shopName ?? seller.name}
+          </div>
+          <p className="text-forest/60 text-base">
+            Pas de live en cours pour l'instant.
+          </p>
+          <p className="text-forest/40 text-sm mt-1">
+            La boutique s'ouvrira dès que la vendeuse démarre son live.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-forest/40">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Vérification automatique toutes les 30s…
+        </div>
+      </div>
+    );
+  }
 
   // Desktop → site e-commerce classique (grid de cards)
   if (isDesktop) {
