@@ -34,6 +34,7 @@ export function CheckoutPage() {
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [pendingMethod, setPendingMethod] = useState<PaymentMethod | null>(null);
 
   const mutation = useMutation({
     mutationFn: checkoutApi.createOrder,
@@ -43,7 +44,7 @@ export function CheckoutPage() {
         state: { order: data.order, saleSlug },
       });
     },
-    onError: (e) => setError(extractError(e, 'Commande impossible')),
+    onError: (e) => { setPendingMethod(null); setError(extractError(e, 'Commande impossible')); },
   });
 
   function onPay(method: PaymentMethod) {
@@ -53,6 +54,7 @@ export function CheckoutPage() {
     }
     setPhoneError('');
     setError(null);
+    setPendingMethod(method);
     mutation.mutate({
       buyerPhone: phone,
       paymentMethod: method,
@@ -156,13 +158,13 @@ export function CheckoutPage() {
               key={p.id}
               disabled={mutation.isPending}
               onClick={() => onPay(p.id)}
-              className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 shadow-soft active:scale-[0.98] transition ${p.className}`}
+              className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 shadow-soft active:scale-[0.98] transition ${p.className} ${mutation.isPending && pendingMethod !== p.id ? 'opacity-40' : ''}`}
             >
               <span className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center text-base font-bold flex-shrink-0">
                 {p.icon}
               </span>
               <span>{p.label}</span>
-              {mutation.isPending && (
+              {pendingMethod === p.id && (
                 <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
               )}
             </button>
