@@ -1,10 +1,13 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Check, Phone, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useOrderSocket } from '@/hooks/useOrderSocket';
 
 
 export function OrderSuccessPage() {
   const { id } = useParams<{ id: string }>();
+  const orderId = id ? Number(id) : null;
+  useOrderSocket(orderId);
   const location = useLocation();
   const navigate = useNavigate();
   const state = (location.state as { saleSlug?: string; buyerFirstName?: string } | null) ?? {};

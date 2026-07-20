@@ -11,6 +11,7 @@ import { formatCfa } from '@/lib/utils';
 import { useIsDesktop } from '@/lib/useIsDesktop';
 import { CatalogDesktop } from './CatalogDesktop';
 import type { Product, ProductVariant, VariantType } from '@/types/api';
+import { useShopSocket } from '@/hooks/useShopSocket';
 
 const VARIANT_LABELS: Record<VariantType, string> = {
   COULEUR: 'Couleur',
@@ -179,6 +180,14 @@ export function CatalogPage() {
     refetchInterval: 30_000,
   });
   const lives = livesQuery.data;
+
+  // Socket temps réel : invalide le cache live dès qu'un événement arrive
+  // (évite d'attendre les 30s de polling).
+  useShopSocket(
+    saleSlug,
+    () => { void livesQuery.refetch(); },
+    () => { void livesQuery.refetch(); },
+  );
 
   // Cart : sélection stable de la référence brute, dérivation via useMemo.
   const allCartItems = useCart((s) => s.items);
