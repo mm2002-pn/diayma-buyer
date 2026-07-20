@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -211,11 +211,20 @@ function QuantitySheet({
 
 // ─── Photo slide (card cliquable) ────────────────────────────────────────────
 function PhotoSlide({ p, onSelect }: { p: Product; onSelect: () => void }) {
+  const startPos = useRef<{ x: number; y: number } | null>(null);
+
   return (
     <div className="flex-[0_0_100%] min-w-0 h-full px-4">
       <div
-        className="h-full rounded-3xl overflow-hidden relative bg-cream-100 cursor-pointer active:scale-[0.99] transition-transform"
-        onClick={onSelect}
+        className="h-full rounded-3xl overflow-hidden relative bg-cream-100 cursor-pointer"
+        onPointerDown={(e) => { startPos.current = { x: e.clientX, y: e.clientY }; }}
+        onPointerUp={(e) => {
+          if (!startPos.current) return;
+          const dx = Math.abs(e.clientX - startPos.current.x);
+          const dy = Math.abs(e.clientY - startPos.current.y);
+          if (dx < 8 && dy < 8) onSelect();
+          startPos.current = null;
+        }}
       >
         {p.photoUrl ? (
           <img src={p.photoUrl} alt={p.name ?? ''} className="h-full w-full object-cover" />
