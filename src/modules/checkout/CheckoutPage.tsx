@@ -30,7 +30,7 @@ type CoordsForm = z.infer<typeof stepSchemas[1]>;
 const PAYMENTS: { id: PaymentMethod; label: string; bg: string; icon: string }[] = [
   { id: 'ORANGE_MONEY', label: 'Orange Money', bg: 'bg-orange_money', icon: 'OM' },
   { id: 'WAVE', label: 'Wave', bg: 'bg-wave', icon: '⌬' },
-  { id: 'COD', label: 'À la livraison', bg: 'bg-white text-forest border-2 border-forest/20', icon: '🚚' },
+  { id: 'COD', label: 'À la livraison', bg: 'bg-white text-ink border-2 border-ink/15', icon: '🚚' },
 ];
 
 export function CheckoutPage() {
@@ -71,8 +71,8 @@ export function CheckoutPage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-6xl mb-4">🛍️</div>
-        <div className="text-forest text-lg font-semibold mb-2">Ton panier est vide</div>
-        <div className="text-forest/60 text-sm mb-8">Ajoute des produits pour commander.</div>
+        <div className="text-ink text-lg font-semibold mb-2">Ton panier est vide</div>
+        <div className="text-ink/60 text-sm mb-8">Ajoute des produits pour commander.</div>
         <button className="btn-primary max-w-xs" onClick={() => navigate(`/s/${saleSlug}`)}>
           Retour au catalogue
         </button>
@@ -94,27 +94,27 @@ export function CheckoutPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto md:max-w-2xl md:mx-auto md:w-full md:py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 md:px-0">
+      {/* Header dark */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-3 bg-forest md:bg-transparent md:px-0 md:pt-0 md:pb-2">
         <button
           onClick={() => (step === 0 ? navigate(-1) : setStep((step - 1) as 0 | 1 | 2))}
-          className="p-2 -ml-2 text-forest"
+          className="p-2 -ml-2 text-white md:text-ink"
           disabled={mutation.isPending}
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="text-lg font-semibold text-forest">
+        <div className="text-lg font-semibold text-white md:text-ink">
           {step === 0 ? 'Mon panier' : step === 1 ? 'Coordonnées' : 'Paiement'}
         </div>
         <div className="w-9" />
       </div>
 
       {/* Progress */}
-      <div className="flex gap-1 px-4 mb-2 md:px-0">
+      <div className="flex gap-1 px-4 mb-4 md:px-0">
         {[0, 1, 2].map((s) => (
           <div
             key={s}
-            className={`flex-1 h-1 rounded-full ${s <= step ? 'bg-forest' : 'bg-forest/15'}`}
+            className={`flex-1 h-1 rounded-full ${s <= step ? 'bg-forest' : 'bg-ink/10'}`}
           />
         ))}
       </div>
@@ -142,11 +142,11 @@ export function CheckoutPage() {
                       <div className="h-16 w-16 rounded-xl bg-cream-100" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-forest truncate">{i.productName}</div>
+                      <div className="font-semibold text-ink truncate">{i.productName}</div>
                       {i.variantLabel && (
-                        <div className="text-xs text-forest/60">Taille/couleur : {i.variantLabel}</div>
+                        <div className="text-xs text-ink/60">Taille/couleur : {i.variantLabel}</div>
                       )}
-                      <div className="text-sm font-medium text-forest mt-0.5">
+                      <div className="text-sm font-medium text-ink mt-0.5">
                         {formatCfa(i.priceCfa)} × {i.quantity}
                       </div>
                     </div>
@@ -163,8 +163,8 @@ export function CheckoutPage() {
 
               <div className="mt-6 rounded-2xl bg-white p-4 shadow-soft">
                 <div className="flex items-center justify-between">
-                  <span className="text-forest/70">Total</span>
-                  <span className="text-2xl font-bold text-forest">{formatCfa(totalCfa)}</span>
+                  <span className="text-ink/60">Total</span>
+                  <span className="text-2xl font-bold text-ink">{formatCfa(totalCfa)}</span>
                 </div>
               </div>
               <button className="btn-primary mt-4" onClick={() => setStep(1)}>
@@ -186,9 +186,9 @@ export function CheckoutPage() {
               })}
               className="flex-1 flex flex-col"
             >
-              <div className="flex items-center gap-2 mb-4 text-forest">
+              <div className="flex items-center gap-2 mb-4 text-ink">
                 <User className="h-5 w-5" />
-                <span className="font-medium">Qui commande ?</span>
+                <span className="font-semibold text-base">Qui commande ?</span>
               </div>
 
               <div className="space-y-3">
@@ -197,7 +197,7 @@ export function CheckoutPage() {
                     placeholder="Prénom"
                     autoComplete="given-name"
                     {...form.register('firstName')}
-                    className="w-full h-14 rounded-xl bg-white px-4 text-forest placeholder:text-forest/40 shadow-soft outline-none focus:ring-2 focus:ring-forest/40"
+                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
                   />
                   {form.formState.errors.firstName && (
                     <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.firstName.message}</p>
@@ -208,7 +208,7 @@ export function CheckoutPage() {
                     placeholder="Nom"
                     autoComplete="family-name"
                     {...form.register('lastName')}
-                    className="w-full h-14 rounded-xl bg-white px-4 text-forest placeholder:text-forest/40 shadow-soft outline-none focus:ring-2 focus:ring-forest/40"
+                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
                   />
                   {form.formState.errors.lastName && (
                     <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.lastName.message}</p>
@@ -220,7 +220,7 @@ export function CheckoutPage() {
                     inputMode="tel"
                     autoComplete="tel"
                     {...form.register('phone')}
-                    className="w-full h-14 rounded-xl bg-white px-4 text-forest placeholder:text-forest/40 shadow-soft outline-none focus:ring-2 focus:ring-forest/40"
+                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
                   />
                   {form.formState.errors.phone && (
                     <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.phone.message}</p>
@@ -231,7 +231,7 @@ export function CheckoutPage() {
                     placeholder="Adresse de livraison"
                     autoComplete="street-address"
                     {...form.register('address')}
-                    className="w-full h-14 rounded-xl bg-white px-4 text-forest placeholder:text-forest/40 shadow-soft outline-none focus:ring-2 focus:ring-forest/40"
+                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
                   />
                   {form.formState.errors.address && (
                     <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.address.message}</p>
@@ -263,10 +263,10 @@ export function CheckoutPage() {
                   <div className="h-12 w-12 rounded-lg bg-cream-100" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-forest/60">
+                  <div className="text-xs text-ink/60">
                     {items.reduce((a, i) => a + i.quantity, 0)} article{items.reduce((a, i) => a + i.quantity, 0) > 1 ? 's' : ''}
                   </div>
-                  <div className="text-lg font-bold text-forest">{formatCfa(totalCfa)}</div>
+                  <div className="text-lg font-bold text-ink">{formatCfa(totalCfa)}</div>
                 </div>
               </div>
 
@@ -292,7 +292,7 @@ export function CheckoutPage() {
               )}
 
               <div className="flex-1" />
-              <div className="flex items-center justify-center gap-2 text-xs text-forest/50 pb-4">
+              <div className="flex items-center justify-center gap-2 text-xs text-ink/40 pb-4">
                 <ShieldCheck className="h-4 w-4" />
                 Paiement sécurisé
               </div>

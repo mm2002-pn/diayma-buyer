@@ -32,8 +32,8 @@ export function OrderSuccessPage() {
           transition={{ delay: 0.25 }}
           className="mt-6 space-y-2"
         >
-          <div className="text-forest/70 text-sm">Commande #{id}</div>
-          <div className="text-forest text-lg font-medium">Confirmation envoyée</div>
+          <div className="text-ink/70 text-sm">Commande #{id}</div>
+          <div className="text-ink text-lg font-medium">Confirmation envoyée</div>
         </motion.div>
 
         <motion.div
@@ -43,11 +43,11 @@ export function OrderSuccessPage() {
           className="mt-10 flex flex-col items-center gap-2"
         >
           <div className="rounded-2xl bg-gold/20 p-4">
-            <Truck className="h-10 w-10 text-forest mx-auto" />
+            <Truck className="h-10 w-10 text-ink mx-auto" />
           </div>
-          <div className="text-3xl font-bold text-forest mt-2 font-display">Livré en 24h</div>
+          <div className="text-3xl font-bold text-ink mt-2 font-display">Livré en 24h</div>
           {buyerFirstName && (
-            <div className="text-sm text-forest/60 mt-2">Bonjour {buyerFirstName}, on te contacte très vite.</div>
+            <div className="text-sm text-ink/60 mt-2">Bonjour {buyerFirstName}, on te contacte très vite.</div>
           )}
         </motion.div>
       </div>

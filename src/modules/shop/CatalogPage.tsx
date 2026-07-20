@@ -78,26 +78,28 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
   return (
     <div className="flex-[0_0_100%] min-w-0 px-4">
       <div className="rounded-2xl bg-white shadow-card overflow-hidden">
+        {/* Photo + prix overlay */}
         <div className="relative aspect-[4/5] w-full bg-cream-100">
           {p.photoUrl ? (
             <img src={p.photoUrl} alt={p.name ?? ''} className="h-full w-full object-cover" />
           ) : (
-            <div className="h-full w-full flex items-center justify-center text-forest/30">
+            <div className="h-full w-full flex items-center justify-center text-ink/20">
               <ImageOff className="h-16 w-16" />
             </div>
           )}
-          <div className="absolute bottom-3 right-3 rounded-xl bg-white/95 px-4 py-2 shadow-soft">
-            <div className="text-[10px] uppercase tracking-wider text-forest/60">Prix</div>
-            <div className="text-2xl font-bold text-forest leading-none">
-              {p.priceCfa.toLocaleString('fr-FR')} <span className="text-xs font-medium">F CFA</span>
-            </div>
+          {/* Gradient + prix bas-gauche */}
+          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/60 to-transparent rounded-b-2xl" />
+          <div className="absolute bottom-3 left-4">
+            <span className="text-3xl font-bold text-white leading-none">
+              {p.priceCfa.toLocaleString('fr-FR')}
+            </span>
+            <span className="text-sm font-semibold text-white/90 ml-1">F CFA</span>
           </div>
         </div>
 
         <div className="p-4 space-y-3">
-          {p.name && <div className="text-xl font-semibold text-forest">{p.name}</div>}
+          {p.name && <div className="text-xl font-semibold text-ink">{p.name}</div>}
 
-          {/* Variantes groupées par type */}
           {hasVariants && (
             <div className="space-y-3">
               {types.map((type) => {
@@ -105,7 +107,7 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
                 const selected = selectedByType.get(type);
                 return (
                   <div key={type}>
-                    <div className="text-xs font-medium text-forest/60 uppercase tracking-wider mb-1.5">
+                    <div className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1.5">
                       {VARIANT_LABELS[type]}
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -125,8 +127,8 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
                               active
                                 ? 'bg-forest text-white border-forest'
                                 : disabled
-                                ? 'text-forest/30 border-forest/10 line-through'
-                                : 'bg-white text-forest border-forest/20'
+                                ? 'text-ink/25 border-ink/10 line-through'
+                                : 'bg-white text-ink border-ink/20'
                             }`}
                           >
                             {v.value}
@@ -141,7 +143,7 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
           )}
 
           {isOutOfStock ? (
-            <button disabled className="btn-primary bg-forest/30">
+            <button disabled className="btn-primary opacity-30">
               Rupture de stock
             </button>
           ) : added ? (
@@ -151,7 +153,7 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
           ) : (
             <button className="btn-primary" onClick={handleAdd}>
               <ShoppingCart className="h-5 w-5" />
-              Ajouter au panier
+              Commander
             </button>
           )}
         </div>
@@ -235,26 +237,25 @@ export function CatalogPage() {
   // Pas de live en cours → écran d'attente
   if (!liveActive) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center bg-white">
-        <div className="relative">
-          <div className="h-24 w-24 rounded-full bg-forest/10 flex items-center justify-center">
-            <Radio className="h-10 w-10 text-forest/30" />
+      <div className="flex-1 flex flex-col bg-white">
+        <ShopHeader seller={seller} liveActive={false} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
+          <div className="h-24 w-24 rounded-full bg-ink/5 flex items-center justify-center">
+            <Radio className="h-10 w-10 text-ink/20" />
           </div>
-        </div>
-        <div>
-          <div className="font-display text-2xl font-semibold text-forest mb-2">
-            {seller.shopName ?? seller.name}
+          <div>
+            <div className="font-display text-2xl font-semibold text-ink mb-2">
+              {seller.shopName ?? seller.name}
+            </div>
+            <p className="text-ink/60 text-base">Pas de live en cours pour l'instant.</p>
+            <p className="text-ink/40 text-sm mt-1">
+              La boutique s'ouvrira dès que la vendeuse démarre son live.
+            </p>
           </div>
-          <p className="text-forest/60 text-base">
-            Pas de live en cours pour l'instant.
-          </p>
-          <p className="text-forest/40 text-sm mt-1">
-            La boutique s'ouvrira dès que la vendeuse démarre son live.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-forest/40">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Vérification automatique toutes les 30s…
+          <div className="flex items-center gap-2 text-xs text-ink/40">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Vérification automatique toutes les 30s…
+          </div>
         </div>
       </div>
     );
@@ -298,7 +299,7 @@ export function CatalogPage() {
                 <div
                   key={i}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === selectedIdx ? 'w-6 bg-forest' : 'w-1.5 bg-forest/30'
+                    i === selectedIdx ? 'w-6 bg-forest' : 'w-1.5 bg-ink/20'
                   }`}
                 />
               ))}
@@ -306,13 +307,13 @@ export function CatalogPage() {
           </>
         )}
 
-        <div className="text-center text-xs text-forest/50 pb-4">
+        <div className="text-center text-xs text-ink/40 pb-4">
           {products.length > 1 ? `Swipe pour découvrir · ${products.length} produits` : '1 produit'}
         </div>
       </div>
 
       {cartTotalQty > 0 && (
-        <div className="sticky bottom-0 inset-x-0 p-4 bg-cream/95 backdrop-blur border-t border-forest/10">
+        <div className="sticky bottom-0 inset-x-0 p-4 bg-white/95 backdrop-blur border-t border-ink/10">
           <button className="btn-primary" onClick={() => navigate(`/s/${saleSlug}/checkout`)}>
             <ShoppingCart className="h-5 w-5" />
             Voir mon panier ({cartTotalQty}) · {formatCfa(cartTotalCfa)}
