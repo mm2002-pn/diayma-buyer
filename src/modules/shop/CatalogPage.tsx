@@ -254,6 +254,7 @@ export function CatalogPage() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'center' });
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [qtyOpen, setQtyOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['shop', saleSlug],
@@ -271,7 +272,24 @@ export function CatalogPage() {
     saleSlug,
     () => { void livesQuery.refetch(); },
     () => { void livesQuery.refetch(); },
+    (featuredProductId) => {
+      setProducts((prev) => {
+        if (!featuredProductId) return prev;
+        const idx = prev.findIndex((p) => p.id === featuredProductId);
+        if (idx <= 0) return prev;
+        const next = [...prev];
+        const [featured] = next.splice(idx, 1);
+        next.unshift(featured);
+        emblaApi?.scrollTo(0, false);
+        setSelectedIdx(0);
+        return next;
+      });
+    },
   );
+
+  useEffect(() => {
+    if (data?.products) setProducts(data.products);
+  }, [data?.products]);
 
   const allCartItems = useCart((s) => s.items);
   const { cartTotalQty, cartTotalCfa } = useMemo(() => {
@@ -309,7 +327,7 @@ export function CatalogPage() {
     );
   }
 
-  const { seller, products } = data;
+  const { seller } = data;
   const liveActive = (livesQuery.data ?? []).some(
     (l) => l.sellerId === seller.id && l.status === 'LIVE',
   );
