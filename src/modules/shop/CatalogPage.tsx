@@ -30,8 +30,8 @@ function QuantitySheet({
   onClose: () => void;
 }) {
   const add = useCart((s) => s.add);
-  const navigate = useNavigate();
   const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
 
   const variantsByType = useMemo(() => {
     const map = new Map<VariantType, ProductVariant[]>();
@@ -65,8 +65,8 @@ function QuantitySheet({
   const primaryVariant = types.length > 0 ? selectedByType.get(types[0]) ?? null : null;
   const variantLabel = types.map((t) => selectedByType.get(t)?.value).filter(Boolean).join(' · ');
 
-  function handleCommander() {
-    if (isOutOfStock) return;
+  function handleAjouter() {
+    if (isOutOfStock || added) return;
     add({
       productId: product.id,
       variantId: primaryVariant?.id ?? null,
@@ -78,7 +78,8 @@ function QuantitySheet({
       saleSlug,
       quantity: qty,
     });
-    navigate(`/s/${saleSlug}/checkout`);
+    setAdded(true);
+    setTimeout(() => { onClose(); }, 900);
   }
 
   return (
@@ -192,10 +193,14 @@ function QuantitySheet({
             <button disabled className="btn-primary opacity-30">
               Rupture de stock
             </button>
+          ) : added ? (
+            <button disabled className="btn-primary bg-green-600">
+              ✓ Ajouté · {formatCfa(product.priceCfa * qty)}
+            </button>
           ) : (
-            <button className="btn-primary" onClick={handleCommander}>
+            <button className="btn-primary" onClick={handleAjouter}>
               <ShoppingCart className="h-5 w-5" />
-              Commander · {formatCfa(product.priceCfa * qty)}
+              Ajouter · {formatCfa(product.priceCfa * qty)}
             </button>
           )}
         </div>
@@ -380,8 +385,9 @@ export function CatalogPage() {
               onClick={() => navigate(`/s/${saleSlug}/checkout`)}
             >
               <ShoppingCart className="h-5 w-5" />
-              Commander · {formatCfa(cartTotalCfa)}
-              <span className="ml-1 bg-white/20 rounded-full px-2 py-0.5 text-xs font-bold">
+              <span>Commander</span>
+              <span className="ml-1 font-normal opacity-80">· {formatCfa(cartTotalCfa)}</span>
+              <span className="ml-2 bg-white/25 rounded-full px-2 py-0.5 text-xs font-bold">
                 {cartTotalQty}
               </span>
             </button>
@@ -389,7 +395,6 @@ export function CatalogPage() {
             <button
               className="btn-primary"
               onClick={() => setQtyOpen(true)}
-              disabled={!currentProduct}
             >
               <ShoppingCart className="h-5 w-5" />
               Commander
