@@ -204,11 +204,14 @@ function QuantitySheet({
   );
 }
 
-// ─── Photo slide (card sans contenu sous la photo) ───────────────────────────
-function PhotoSlide({ p }: { p: Product }) {
+// ─── Photo slide (card cliquable) ────────────────────────────────────────────
+function PhotoSlide({ p, onSelect }: { p: Product; onSelect: () => void }) {
   return (
     <div className="flex-[0_0_100%] min-w-0 h-full px-4">
-      <div className="h-full rounded-3xl overflow-hidden relative bg-cream-100">
+      <div
+        className="h-full rounded-3xl overflow-hidden relative bg-cream-100 cursor-pointer active:scale-[0.99] transition-transform"
+        onClick={onSelect}
+      >
         {p.photoUrl ? (
           <img src={p.photoUrl} alt={p.name ?? ''} className="h-full w-full object-cover" />
         ) : (
@@ -349,8 +352,8 @@ export function CatalogPage() {
         {/* Carousel */}
         <div className="flex-1 min-h-0 overflow-hidden" ref={emblaRef}>
           <div className="flex h-full">
-            {products.map((p) => (
-              <PhotoSlide key={p.id} p={p} />
+            {products.map((p, i) => (
+              <PhotoSlide key={p.id} p={p} onSelect={() => { setSelectedIdx(i); setQtyOpen(true); }} />
             ))}
           </div>
         </div>
