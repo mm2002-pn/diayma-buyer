@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
-import { ShoppingCart, Loader2, ImageOff, Radio } from 'lucide-react';
+import { ShoppingCart, Loader2, ImageOff, Radio, X, Minus, Plus } from 'lucide-react';
 
 import { ShopHeader } from '@/components/ShopHeader';
 import { shopApi } from './shop.api';
@@ -19,24 +19,32 @@ const VARIANT_LABELS: Record<VariantType, string> = {
   POINTURE: 'Pointure',
 };
 
-function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
+// ─── QuantitySheet ────────────────────────────────────────────────────────────
+function QuantitySheet({
+  product,
+  saleSlug,
+  onClose,
+}: {
+  product: Product;
+  saleSlug: string;
+  onClose: () => void;
+}) {
   const add = useCart((s) => s.add);
-  const [added, setAdded] = useState(false);
+  const navigate = useNavigate();
+  const [qty, setQty] = useState(1);
 
-  // Grouper variantes par type
   const variantsByType = useMemo(() => {
     const map = new Map<VariantType, ProductVariant[]>();
-    for (const v of p.variants) {
+    for (const v of product.variants) {
       if (!map.has(v.type)) map.set(v.type, []);
       map.get(v.type)!.push(v);
     }
     return map;
-  }, [p.variants]);
+  }, [product.variants]);
 
   const types = Array.from(variantsByType.keys());
   const hasVariants = types.length > 0;
 
-  // Une sélection par type — initialisée sur le premier en stock
   const [selectedByType, setSelectedByType] = useState<Map<VariantType, ProductVariant>>(() => {
     const init = new Map<VariantType, ProductVariant>();
     for (const [type, variants] of variantsByType) {
@@ -46,60 +54,72 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
     return init;
   });
 
-  // Toutes les sélections sont faites ?
-  const allSelected = types.every((t) => selectedByType.has(t));
-
-  // Stock disponible = tous les types sélectionnés ont du stock
   const isOutOfStock = hasVariants
     ? types.some((t) => (selectedByType.get(t)?.stock ?? 0) === 0)
-    : p.stock === 0;
+    : product.stock === 0;
 
-  // Pour l'API on envoie un seul variantId.
-  // Si un seul type → celui sélectionné. Si plusieurs → le premier type sélectionné.
+  const maxQty = hasVariants
+    ? Math.min(...types.map((t) => selectedByType.get(t)?.stock ?? 0))
+    : product.stock;
+
   const primaryVariant = types.length > 0 ? selectedByType.get(types[0]) ?? null : null;
   const variantLabel = types.map((t) => selectedByType.get(t)?.value).filter(Boolean).join(' · ');
 
-  function handleAdd() {
-    if (isOutOfStock || !allSelected || added) return;
+  function handleCommander() {
+    if (isOutOfStock) return;
     add({
-      productId: p.id,
+      productId: product.id,
       variantId: primaryVariant?.id ?? null,
       variantLabel: variantLabel || null,
-      productName: p.name,
-      photoUrl: p.photoUrl,
-      priceCfa: p.priceCfa,
-      sellerId: p.sellerId,
+      productName: product.name,
+      photoUrl: product.photoUrl,
+      priceCfa: product.priceCfa,
+      sellerId: product.sellerId,
       saleSlug,
+      quantity: qty,
     });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    navigate(`/s/${saleSlug}/checkout`);
   }
 
   return (
-    <div className="flex-[0_0_100%] min-w-0 px-4">
-      <div className="rounded-2xl bg-white shadow-card overflow-hidden">
-        {/* Photo + prix overlay */}
-        <div className="relative aspect-[4/5] w-full bg-cream-100">
-          {p.photoUrl ? (
-            <img src={p.photoUrl} alt={p.name ?? ''} className="h-full w-full object-cover" />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center text-ink/20">
-              <ImageOff className="h-16 w-16" />
-            </div>
-          )}
-          {/* Gradient + prix bas-gauche */}
-          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/60 to-transparent rounded-b-2xl" />
-          <div className="absolute bottom-3 left-4">
-            <span className="text-3xl font-bold text-white leading-none">
-              {p.priceCfa.toLocaleString('fr-FR')}
-            </span>
-            <span className="text-sm font-semibold text-white/90 ml-1">F CFA</span>
-          </div>
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} />
+
+      {/* Sheet */}
+      <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl shadow-2xl">
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="h-1 w-10 rounded-full bg-ink/15" />
         </div>
 
-        <div className="p-4 space-y-3">
-          {p.name && <div className="text-xl font-semibold text-ink">{p.name}</div>}
+        <div className="px-5 pt-3 pb-8 space-y-5">
+          {/* Produit */}
+          <div className="flex items-center gap-3">
+            {product.photoUrl ? (
+              <img
+                src={product.photoUrl}
+                alt={product.name ?? ''}
+                className="h-16 w-16 rounded-2xl object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-2xl bg-cream-100 flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              {product.name && (
+                <div className="font-semibold text-ink text-base leading-tight">{product.name}</div>
+              )}
+              <div className="text-xl font-bold text-ink mt-0.5">
+                {product.priceCfa.toLocaleString('fr-FR')}{' '}
+                <span className="text-sm font-semibold">F CFA</span>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1 text-ink/30 flex-shrink-0">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
+          {/* Variantes */}
           {hasVariants && (
             <div className="space-y-3">
               {types.map((type) => {
@@ -107,7 +127,7 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
                 const selected = selectedByType.get(type);
                 return (
                   <div key={type}>
-                    <div className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1.5">
+                    <div className="text-xs font-semibold text-ink/50 uppercase tracking-wider mb-2">
                       {VARIANT_LABELS[type]}
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -122,13 +142,14 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
                               const next = new Map(selectedByType);
                               next.set(type, v);
                               setSelectedByType(next);
+                              setQty(1);
                             }}
-                            className={`min-w-[52px] h-10 px-3 rounded-lg text-sm font-medium border transition ${
+                            className={`min-w-[48px] h-10 px-3 rounded-xl text-sm font-semibold border transition ${
                               active
                                 ? 'bg-forest text-white border-forest'
                                 : disabled
-                                ? 'text-ink/25 border-ink/10 line-through'
-                                : 'bg-white text-ink border-ink/20'
+                                ? 'text-ink/20 border-ink/10 line-through'
+                                : 'text-ink border-ink/20'
                             }`}
                           >
                             {v.value}
@@ -142,32 +163,80 @@ function ProductSlide({ p, saleSlug }: { p: Product; saleSlug: string }) {
             </div>
           )}
 
+          {/* Quantité */}
+          {!isOutOfStock && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-ink/60">Quantité</span>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  disabled={qty <= 1}
+                  className="h-9 w-9 rounded-full bg-cream-100 flex items-center justify-center text-ink disabled:opacity-30 transition"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="text-lg font-bold text-ink w-6 text-center">{qty}</span>
+                <button
+                  onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                  disabled={qty >= maxQty}
+                  className="h-9 w-9 rounded-full bg-forest flex items-center justify-center text-white disabled:opacity-30 transition"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CTA */}
           {isOutOfStock ? (
             <button disabled className="btn-primary opacity-30">
               Rupture de stock
             </button>
-          ) : added ? (
-            <button disabled className="btn-primary bg-green-600">
-              ✓ Ajouté au panier
-            </button>
           ) : (
-            <button className="btn-primary" onClick={handleAdd}>
+            <button className="btn-primary" onClick={handleCommander}>
               <ShoppingCart className="h-5 w-5" />
-              Commander
+              Commander · {formatCfa(product.priceCfa * qty)}
             </button>
           )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Photo slide (card sans contenu sous la photo) ───────────────────────────
+function PhotoSlide({ p }: { p: Product }) {
+  return (
+    <div className="flex-[0_0_100%] min-w-0 h-full px-4">
+      <div className="h-full rounded-3xl overflow-hidden relative bg-cream-100">
+        {p.photoUrl ? (
+          <img src={p.photoUrl} alt={p.name ?? ''} className="h-full w-full object-cover" />
+        ) : (
+          <div className="h-full flex items-center justify-center text-ink/20">
+            <ImageOff className="h-16 w-16" />
+          </div>
+        )}
+        {/* Gradient + prix */}
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute bottom-5 left-5">
+          <span className="text-4xl font-bold text-white leading-none">
+            {p.priceCfa.toLocaleString('fr-FR')}
+          </span>
+          <span className="text-lg font-semibold text-white/90 ml-2">F CFA</span>
         </div>
       </div>
     </div>
   );
 }
 
+// ─── CatalogPage ─────────────────────────────────────────────────────────────
 export function CatalogPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'center' });
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [qtyOpen, setQtyOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['shop', saleSlug],
@@ -175,23 +244,18 @@ export function CatalogPage() {
     enabled: !!saleSlug,
   });
 
-  // useQuery : évite `= []` en destructuring (référence différente à chaque render).
   const livesQuery = useQuery({
     queryKey: ['active-lives'],
     queryFn: shopApi.activeLives,
     refetchInterval: 30_000,
   });
-  const lives = livesQuery.data;
 
-  // Socket temps réel : invalide le cache live dès qu'un événement arrive
-  // (évite d'attendre les 30s de polling).
   useShopSocket(
     saleSlug,
     () => { void livesQuery.refetch(); },
     () => { void livesQuery.refetch(); },
   );
 
-  // Cart : sélection stable de la référence brute, dérivation via useMemo.
   const allCartItems = useCart((s) => s.items);
   const { cartTotalQty, cartTotalCfa } = useMemo(() => {
     const items = saleSlug ? allCartItems.filter((i) => i.saleSlug === saleSlug) : [];
@@ -201,7 +265,6 @@ export function CatalogPage() {
     };
   }, [allCartItems, saleSlug]);
 
-  // Handler stable pour éviter un ré-abonnement embla à chaque render.
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
     setSelectedIdx(emblaApi.selectedScrollSnap());
@@ -210,9 +273,7 @@ export function CatalogPage() {
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on('select', onSelect);
-    return () => {
-      emblaApi.off('select', onSelect);
-    };
+    return () => { emblaApi.off('select', onSelect); };
   }, [emblaApi, onSelect]);
 
   if (isLoading || livesQuery.isLoading) {
@@ -224,17 +285,19 @@ export function CatalogPage() {
   }
   if (error || !data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="text-forest text-lg font-semibold">Boutique introuvable</div>
-        <div className="text-forest/60 text-sm mt-2">Vérifie le lien avec la vendeuse.</div>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div className="text-ink text-lg font-semibold">Boutique introuvable</div>
+        <div className="text-ink/50 text-sm mt-2">Vérifie le lien avec la vendeuse.</div>
       </div>
     );
   }
 
   const { seller, products } = data;
-  const liveActive = (lives ?? []).some((l) => l.sellerId === seller.id && l.status === 'LIVE');
+  const liveActive = (livesQuery.data ?? []).some(
+    (l) => l.sellerId === seller.id && l.status === 'LIVE',
+  );
 
-  // Pas de live en cours → écran d'attente
+  // Écran d'attente si pas de live
   if (!liveActive) {
     return (
       <div className="flex-1 flex flex-col bg-white">
@@ -261,7 +324,6 @@ export function CatalogPage() {
     );
   }
 
-  // Desktop → site e-commerce classique (grid de cards)
   if (isDesktop) {
     return (
       <CatalogDesktop
@@ -275,50 +337,71 @@ export function CatalogPage() {
     );
   }
 
-  // Mobile → parcours swipe TikTok-like
+  const currentProduct = products[selectedIdx] ?? products[0];
+
+  // ── Mobile : photo pleine hauteur + Commander ──
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white">
+    <div className="flex-1 flex flex-col bg-white overflow-hidden">
       <ShopHeader seller={seller} liveActive={liveActive} />
 
-      <div className="flex-1 flex flex-col">
-        {products.length === 1 ? (
-          <ProductSlide p={products[0]} saleSlug={saleSlug!} />
-        ) : (
-          <>
-            <div className="overflow-hidden" ref={emblaRef}>
-              <div className="flex touch-pan-y">
-                {products.map((p) => (
-                  <ProductSlide key={p.id} p={p} saleSlug={saleSlug!} />
-                ))}
-              </div>
-            </div>
+      {/* Zone photos — flex-1 pour prendre toute la hauteur disponible */}
+      <div className="flex-1 flex flex-col min-h-0 pt-3 pb-4">
+        {/* Carousel */}
+        <div className="flex-1 min-h-0 overflow-hidden" ref={emblaRef}>
+          <div className="flex h-full">
+            {products.map((p) => (
+              <PhotoSlide key={p.id} p={p} />
+            ))}
+          </div>
+        </div>
 
-            {/* Dots indicateur */}
-            <div className="flex justify-center gap-1.5 py-3">
-              {products.map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === selectedIdx ? 'w-6 bg-forest' : 'w-1.5 bg-ink/20'
-                  }`}
-                />
-              ))}
-            </div>
-          </>
+        {/* Dots */}
+        {products.length > 1 && (
+          <div className="flex justify-center gap-2 pt-3 pb-1">
+            {products.map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i === selectedIdx ? 'w-6 bg-gold' : 'w-2 bg-ink/15'
+                }`}
+              />
+            ))}
+          </div>
         )}
 
-        <div className="text-center text-xs text-ink/40 pb-4">
-          {products.length > 1 ? `Swipe pour découvrir · ${products.length} produits` : '1 produit'}
+        {/* Bouton Commander */}
+        <div className="px-4 pt-3">
+          {cartTotalQty > 0 ? (
+            <button
+              className="btn-primary"
+              onClick={() => navigate(`/s/${saleSlug}/checkout`)}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              Commander · {formatCfa(cartTotalCfa)}
+              <span className="ml-1 bg-white/20 rounded-full px-2 py-0.5 text-xs font-bold">
+                {cartTotalQty}
+              </span>
+            </button>
+          ) : (
+            <button
+              className="btn-primary"
+              onClick={() => setQtyOpen(true)}
+              disabled={!currentProduct}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              Commander
+            </button>
+          )}
         </div>
       </div>
 
-      {cartTotalQty > 0 && (
-        <div className="sticky bottom-0 inset-x-0 p-4 bg-white/95 backdrop-blur border-t border-ink/10">
-          <button className="btn-primary" onClick={() => navigate(`/s/${saleSlug}/checkout`)}>
-            <ShoppingCart className="h-5 w-5" />
-            Voir mon panier ({cartTotalQty}) · {formatCfa(cartTotalCfa)}
-          </button>
-        </div>
+      {/* Bottom sheet quantité */}
+      {qtyOpen && currentProduct && (
+        <QuantitySheet
+          product={currentProduct}
+          saleSlug={saleSlug!}
+          onClose={() => setQtyOpen(false)}
+        />
       )}
     </div>
   );

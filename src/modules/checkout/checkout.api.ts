@@ -3,9 +3,7 @@ import type { OrderResponse, PaymentMethod } from '@/types/api';
 
 export interface CreateOrderPayload {
   liveId?: number | null;
-  buyerName: string;
   buyerPhone: string;
-  buyerAddress: string;
   paymentMethod: PaymentMethod;
   items: { productId: number; variantId?: number | null; quantity: number }[];
 }

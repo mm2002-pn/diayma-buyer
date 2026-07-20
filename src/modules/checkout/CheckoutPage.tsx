@@ -1,11 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ShieldCheck, User, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Loader2, Trash2 } from 'lucide-react';
 
 import { useCart } from '@/stores/cart.store';
 import { checkoutApi } from './checkout.api';
@@ -13,292 +9,178 @@ import { extractError } from '@/lib/api';
 import { formatCfa } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/api';
 
-const stepSchemas = {
-  1: z.object({
-    firstName: z.string().trim().min(2, 'Prénom requis'),
-    lastName: z.string().trim().min(2, 'Nom requis'),
-    phone: z
-      .string()
-      .trim()
-      .regex(/^(\+221)?[0-9]{9}$/, 'Ex : +221771234567'),
-    address: z.string().trim().min(3, 'Adresse requise').max(300),
-  }),
-};
-
-type CoordsForm = z.infer<typeof stepSchemas[1]>;
-
-const PAYMENTS: { id: PaymentMethod; label: string; bg: string; icon: string }[] = [
-  { id: 'ORANGE_MONEY', label: 'Orange Money', bg: 'bg-orange_money', icon: 'OM' },
-  { id: 'WAVE', label: 'Wave', bg: 'bg-wave', icon: '⌬' },
-  { id: 'COD', label: 'À la livraison', bg: 'bg-white text-ink border-2 border-ink/15', icon: '🚚' },
+const PAYMENTS: { id: PaymentMethod; label: string; className: string; icon: string }[] = [
+  { id: 'ORANGE_MONEY', label: 'Orange Money', className: 'bg-orange_money text-white', icon: 'OM' },
+  { id: 'WAVE', label: 'Wave', className: 'bg-wave text-white', icon: '⌬' },
+  { id: 'COD', label: 'À la livraison', className: 'bg-white text-ink border-2 border-ink/15', icon: '🚚' },
 ];
+
+const PHONE_RE = /^(\+221)?[0-9]{9}$/;
 
 export function CheckoutPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
   const navigate = useNavigate();
-  // Sélecteurs stables — s.items est la référence brute du store ; on filtre via useMemo
-  // pour éviter que le selector renvoie un nouveau tableau à chaque render (boucle infinie Zustand).
+
   const allItems = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const removeItem = useCart((s) => s.remove);
+
   const items = useMemo(
     () => (saleSlug ? allItems.filter((i) => i.saleSlug === saleSlug) : []),
-    [allItems, saleSlug]
+    [allItems, saleSlug],
   );
   const totalCfa = items.reduce((acc, i) => acc + i.priceCfa * i.quantity, 0);
 
-  const [step, setStep] = useState<0 | 1 | 2>(0); // 0=Panier, 1=Coord, 2=Paiement
-  const [coords, setCoords] = useState<CoordsForm | null>(null);
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  const form = useForm<CoordsForm>({
-    resolver: zodResolver(stepSchemas[1]),
-    defaultValues: { firstName: '', lastName: '', phone: '', address: '' },
-  });
 
   const mutation = useMutation({
     mutationFn: checkoutApi.createOrder,
     onSuccess: (data) => {
       clear();
       navigate(`/order/success/${data.order.id}`, {
-        state: { order: data.order, saleSlug, buyerFirstName: coords?.firstName },
+        state: { order: data.order, saleSlug },
       });
     },
     onError: (e) => setError(extractError(e, 'Commande impossible')),
   });
 
-  if (items.length === 0 && step === 0) {
+  function onPay(method: PaymentMethod) {
+    if (!PHONE_RE.test(phone)) {
+      setPhoneError('Numéro invalide · ex : +221771234567');
+      return;
+    }
+    setPhoneError('');
+    setError(null);
+    mutation.mutate({
+      buyerPhone: phone,
+      paymentMethod: method,
+      items: items.map((i) => ({
+        productId: i.productId,
+        variantId: i.variantId,
+        quantity: i.quantity,
+      })),
+    });
+  }
+
+  if (items.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <div className="text-6xl mb-4">🛍️</div>
-        <div className="text-ink text-lg font-semibold mb-2">Ton panier est vide</div>
-        <div className="text-ink/60 text-sm mb-8">Ajoute des produits pour commander.</div>
-        <button className="btn-primary max-w-xs" onClick={() => navigate(`/s/${saleSlug}`)}>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
+        <div className="text-5xl mb-4">🛍️</div>
+        <div className="text-ink text-lg font-semibold mb-2">Aucun article</div>
+        <button className="btn-primary max-w-xs mt-4" onClick={() => navigate(`/s/${saleSlug}`)}>
           Retour au catalogue
         </button>
       </div>
     );
   }
 
-  function onPay(method: PaymentMethod) {
-    if (!coords || !saleSlug) return;
-    setError(null);
-    mutation.mutate({
-      buyerName: `${coords.firstName} ${coords.lastName}`.trim(),
-      buyerPhone: coords.phone,
-      buyerAddress: coords.address,
-      paymentMethod: method,
-      items: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
-    });
-  }
-
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto md:max-w-2xl md:mx-auto md:w-full md:py-8">
+    <div className="flex-1 flex flex-col bg-white overflow-y-auto md:max-w-lg md:mx-auto md:w-full">
       {/* Header dark */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-3 bg-forest md:bg-transparent md:px-0 md:pt-0 md:pb-2">
+      <div className="flex items-center bg-forest px-4 pt-3 pb-3 flex-shrink-0">
         <button
-          onClick={() => (step === 0 ? navigate(-1) : setStep((step - 1) as 0 | 1 | 2))}
-          className="p-2 -ml-2 text-white md:text-ink"
+          onClick={() => navigate(-1)}
+          className="p-2 -ml-2 text-white"
           disabled={mutation.isPending}
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="text-lg font-semibold text-white md:text-ink">
-          {step === 0 ? 'Mon panier' : step === 1 ? 'Coordonnées' : 'Paiement'}
-        </div>
+        <div className="flex-1 text-center text-lg font-semibold text-white">Commander</div>
         <div className="w-9" />
       </div>
 
-      {/* Progress */}
-      <div className="flex gap-1 px-4 mb-4 md:px-0">
-        {[0, 1, 2].map((s) => (
-          <div
-            key={s}
-            className={`flex-1 h-1 rounded-full ${s <= step ? 'bg-forest' : 'bg-ink/10'}`}
-          />
-        ))}
-      </div>
-
-      <div className="flex-1 flex flex-col px-4 py-4 md:px-0">
-        <AnimatePresence mode="wait">
-          {/* Étape 0 : Panier */}
-          {step === 0 && (
-            <motion.div
-              key="cart"
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 30 }}
-              className="flex-1 flex flex-col"
+      <div className="flex-1 px-4 py-5 space-y-5">
+        {/* Articles */}
+        <div className="space-y-2">
+          {items.map((i) => (
+            <div
+              key={`${i.productId}-${i.variantId}`}
+              className="flex items-center gap-3 bg-cream-50 rounded-2xl p-3"
             >
-              <div className="flex-1 space-y-3">
-                {items.map((i) => (
-                  <div
-                    key={`${i.productId}-${i.variantId}`}
-                    className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-soft"
-                  >
-                    {i.photoUrl ? (
-                      <img src={i.photoUrl} className="h-16 w-16 rounded-xl object-cover" alt="" />
-                    ) : (
-                      <div className="h-16 w-16 rounded-xl bg-cream-100" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-ink truncate">{i.productName}</div>
-                      {i.variantLabel && (
-                        <div className="text-xs text-ink/60">Taille/couleur : {i.variantLabel}</div>
-                      )}
-                      <div className="text-sm font-medium text-ink mt-0.5">
-                        {formatCfa(i.priceCfa)} × {i.quantity}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeItem(i.productId, i.variantId)}
-                      className="p-2 text-forest/60"
-                      aria-label="Retirer"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 rounded-2xl bg-white p-4 shadow-soft">
-                <div className="flex items-center justify-between">
-                  <span className="text-ink/60">Total</span>
-                  <span className="text-2xl font-bold text-ink">{formatCfa(totalCfa)}</span>
-                </div>
-              </div>
-              <button className="btn-primary mt-4" onClick={() => setStep(1)}>
-                Continuer <ArrowRight className="h-5 w-5" />
-              </button>
-            </motion.div>
-          )}
-
-          {/* Étape 1 : Coordonnées */}
-          {step === 1 && (
-            <motion.form
-              key="coords"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              onSubmit={form.handleSubmit((v) => {
-                setCoords(v);
-                setStep(2);
-              })}
-              className="flex-1 flex flex-col"
-            >
-              <div className="flex items-center gap-2 mb-4 text-ink">
-                <User className="h-5 w-5" />
-                <span className="font-semibold text-base">Qui commande ?</span>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <input
-                    placeholder="Prénom"
-                    autoComplete="given-name"
-                    {...form.register('firstName')}
-                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
-                  />
-                  {form.formState.errors.firstName && (
-                    <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.firstName.message}</p>
-                  )}
-                </div>
-                <div>
-                  <input
-                    placeholder="Nom"
-                    autoComplete="family-name"
-                    {...form.register('lastName')}
-                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
-                  />
-                  {form.formState.errors.lastName && (
-                    <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.lastName.message}</p>
-                  )}
-                </div>
-                <div>
-                  <input
-                    placeholder="Téléphone (+221771234567)"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    {...form.register('phone')}
-                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
-                  />
-                  {form.formState.errors.phone && (
-                    <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.phone.message}</p>
-                  )}
-                </div>
-                <div>
-                  <input
-                    placeholder="Adresse de livraison"
-                    autoComplete="street-address"
-                    {...form.register('address')}
-                    className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink placeholder:text-ink/40 outline-none focus:ring-2 focus:ring-forest/30"
-                  />
-                  {form.formState.errors.address && (
-                    <p className="text-xs text-red-600 mt-1 ml-1">{form.formState.errors.address.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex-1" />
-              <button type="submit" className="btn-primary mt-6">
-                Continuer <ArrowRight className="h-5 w-5" />
-              </button>
-            </motion.form>
-          )}
-
-          {/* Étape 2 : Paiement */}
-          {step === 2 && (
-            <motion.div
-              key="payment"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              className="flex-1 flex flex-col"
-            >
-              {/* Récap */}
-              <div className="rounded-2xl bg-white p-3 shadow-soft mb-4 flex items-center gap-3">
-                {items[0]?.photoUrl ? (
-                  <img src={items[0].photoUrl} className="h-12 w-12 rounded-lg object-cover" alt="" />
-                ) : (
-                  <div className="h-12 w-12 rounded-lg bg-cream-100" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-ink/60">
-                    {items.reduce((a, i) => a + i.quantity, 0)} article{items.reduce((a, i) => a + i.quantity, 0) > 1 ? 's' : ''}
-                  </div>
-                  <div className="text-lg font-bold text-ink">{formatCfa(totalCfa)}</div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {PAYMENTS.map((p) => (
-                  <button
-                    key={p.id}
-                    disabled={mutation.isPending}
-                    onClick={() => onPay(p.id)}
-                    className={`w-full h-14 rounded-2xl text-white text-lg font-semibold flex items-center gap-3 px-5 shadow-soft active:scale-[0.98] transition ${p.bg}`}
-                  >
-                    <span className="h-9 w-9 rounded-full bg-white/25 flex items-center justify-center text-lg">{p.icon}</span>
-                    {p.label}
-                    {mutation.isPending && <Loader2 className="ml-auto h-5 w-5 animate-spin" />}
-                  </button>
-                ))}
-              </div>
-
-              {error && (
-                <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-                  {error}
-                </div>
+              {i.photoUrl ? (
+                <img src={i.photoUrl} className="h-14 w-14 rounded-xl object-cover flex-shrink-0" alt="" />
+              ) : (
+                <div className="h-14 w-14 rounded-xl bg-cream-100 flex-shrink-0" />
               )}
-
-              <div className="flex-1" />
-              <div className="flex items-center justify-center gap-2 text-xs text-ink/40 pb-4">
-                <ShieldCheck className="h-4 w-4" />
-                Paiement sécurisé
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-ink text-sm truncate">{i.productName}</div>
+                {i.variantLabel && (
+                  <div className="text-xs text-ink/50">{i.variantLabel}</div>
+                )}
+                <div className="text-sm font-semibold text-ink mt-0.5">
+                  {formatCfa(i.priceCfa)} × {i.quantity}
+                </div>
               </div>
-            </motion.div>
+              <button
+                onClick={() => removeItem(i.productId, i.variantId)}
+                className="p-1.5 text-ink/30"
+                aria-label="Retirer"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div className="flex items-center justify-between px-1">
+          <span className="text-ink/60 font-medium">Total</span>
+          <span className="text-2xl font-bold text-ink">{formatCfa(totalCfa)}</span>
+        </div>
+
+        {/* Téléphone */}
+        <div>
+          <label className="text-sm font-semibold text-ink/70 block mb-2">
+            Ton numéro de téléphone
+          </label>
+          <input
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="+221 77 000 00 00"
+            value={phone}
+            onChange={(e) => { setPhone(e.target.value); setPhoneError(''); }}
+            className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink text-base placeholder:text-ink/35 outline-none focus:ring-2 focus:ring-forest/30"
+          />
+          {phoneError && (
+            <p className="text-xs text-red-600 mt-1.5 ml-1">{phoneError}</p>
           )}
-        </AnimatePresence>
+        </div>
+
+        {/* Moyens de paiement */}
+        <div className="space-y-3">
+          {PAYMENTS.map((p) => (
+            <button
+              key={p.id}
+              disabled={mutation.isPending}
+              onClick={() => onPay(p.id)}
+              className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 shadow-soft active:scale-[0.98] transition ${p.className}`}
+            >
+              <span className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center text-base font-bold flex-shrink-0">
+                {p.icon}
+              </span>
+              <span>{p.label}</span>
+              {mutation.isPending && (
+                <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Erreur */}
+        {error && (
+          <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* Sécurité */}
+        <div className="flex items-center justify-center gap-2 text-xs text-ink/35 pb-2">
+          <ShieldCheck className="h-4 w-4" />
+          Paiement sécurisé
+        </div>
       </div>
     </div>
   );
