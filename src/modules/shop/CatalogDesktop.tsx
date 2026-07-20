@@ -239,7 +239,7 @@ export function CatalogDesktop({
             )}
           </div>
 
-          {/* Panier */}
+          {/* Commander */}
           <button
             disabled={cartTotalQty === 0}
             onClick={() => navigate(`/s/${saleSlug}/checkout`)}
@@ -247,7 +247,7 @@ export function CatalogDesktop({
           >
             <ShoppingBag className="h-4 w-4" />
             <span>
-              Panier
+              Commander
               {cartTotalQty > 0 && (
                 <span className="ml-2 font-normal opacity-80">· {formatCfa(cartTotalCfa)}</span>
               )}
