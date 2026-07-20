@@ -214,9 +214,9 @@ export function CatalogDesktop({
   });
 
   return (
-    <div className="flex-1 flex flex-col bg-cream">
+    <div className="flex-1 flex flex-col bg-white">
       {/* Top bar sticky */}
-      <header className="sticky top-0 z-20 bg-cream/85 backdrop-blur border-b border-forest/10">
+      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-forest/10">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-4 flex items-center justify-between gap-6">
           <button
             onClick={() => navigate('/')}
@@ -249,7 +249,7 @@ export function CatalogDesktop({
             {cartTotalQty > 0 && (
               <span
                 className="absolute -top-2 -right-2 h-6 min-w-6 px-1.5 rounded-full text-white text-xs font-bold flex items-center justify-center shadow-md"
-                style={{ backgroundColor: '#C24E2F', border: '2px solid #F5EDD9' }}
+                style={{ backgroundColor: '#C24E2F', border: '2px solid #ffffff' }}
               >
                 {cartTotalQty}
               </span>
@@ -344,7 +344,7 @@ export function CatalogDesktop({
       </section>
 
       {/* Filtres */}
-      <section className="border-b border-forest/10 sticky top-[73px] z-10 backdrop-blur bg-cream/85">
+      <section className="border-b border-forest/10 sticky top-[73px] z-10 backdrop-blur bg-white/90">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-3 flex items-center gap-1 overflow-x-auto">
           {FILTERS.map((f) => (
             <button

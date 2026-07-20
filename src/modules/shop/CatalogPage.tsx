@@ -235,7 +235,7 @@ export function CatalogPage() {
   // Pas de live en cours → écran d'attente
   if (!liveActive) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center bg-cream">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center bg-white">
         <div className="relative">
           <div className="h-24 w-24 rounded-full bg-forest/10 flex items-center justify-center">
             <Radio className="h-10 w-10 text-forest/30" />
@@ -276,7 +276,7 @@ export function CatalogPage() {
 
   // Mobile → parcours swipe TikTok-like
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto">
+    <div className="flex-1 flex flex-col overflow-y-auto bg-white">
       <ShopHeader seller={seller} liveActive={liveActive} />
 
       <div className="flex-1 flex flex-col">

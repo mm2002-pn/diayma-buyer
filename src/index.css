@@ -9,7 +9,7 @@
   body {
     margin: 0;
     color: #1A1815;
-    @apply bg-cream antialiased;
+    @apply bg-white antialiased;
     font-family: 'Manrope', system-ui, sans-serif;
     font-feature-settings: 'ss01', 'ss02'; /* Manrope stylistic sets */
   }
