@@ -265,7 +265,7 @@ export function CatalogDesktop({
       </header>
 
       {/* Hero */}
-      <section className="bg-cream border-b border-ink/5 overflow-hidden">
+      <section className="bg-white border-b border-ink/5 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-14 md:py-20 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div>
             {liveActive && (
