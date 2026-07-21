@@ -8,7 +8,12 @@ export interface CreateOrderPayload {
   items: { productId: number; variantId?: number | null; quantity: number }[];
 }
 
+export interface CreateOrderResponse extends OrderResponse {
+  /** Bictorys hosted checkout URL — present for WAVE / ORANGE_MONEY orders */
+  checkoutUrl?: string;
+}
+
 export const checkoutApi = {
   createOrder: (payload: CreateOrderPayload) =>
-    api.post<OrderResponse>('/orders', payload).then((r) => r.data),
+    api.post<CreateOrderResponse>('/orders', payload).then((r) => r.data),
 };

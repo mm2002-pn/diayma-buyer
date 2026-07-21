@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, ShieldCheck, Loader2, Trash2 } from 'lucide-react';
 
 import { useCart } from '@/stores/cart.store';
-import { checkoutApi } from './checkout.api';
+import { checkoutApi, type CreateOrderResponse } from './checkout.api';
 import { extractError } from '@/lib/api';
 import { formatCfa } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/api';
@@ -38,11 +38,18 @@ export function CheckoutPage() {
 
   const mutation = useMutation({
     mutationFn: checkoutApi.createOrder,
-    onSuccess: (data) => {
+    onSuccess: (data: CreateOrderResponse) => {
       clear();
-      navigate(`/order/success/${data.order.id}`, {
-        state: { order: data.order, saleSlug },
-      });
+      if (data.checkoutUrl) {
+        // Online payment (Wave / Orange Money): redirect to Bictorys hosted checkout.
+        // The buyer will be sent back to /order/success/:id on completion.
+        window.location.href = data.checkoutUrl;
+      } else {
+        // COD: navigate directly to the success/confirmation page
+        navigate(`/order/success/${data.order.id}`, {
+          state: { order: data.order, saleSlug },
+        });
+      }
     },
     onError: (e) => { setPendingMethod(null); setError(extractError(e, 'Commande impossible')); },
   });
