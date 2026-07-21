@@ -39,13 +39,13 @@ export function CheckoutPage() {
   const mutation = useMutation({
     mutationFn: checkoutApi.createOrder,
     onSuccess: (data: CreateOrderResponse) => {
-      clear();
       if (data.checkoutUrl) {
-        // Online payment (Wave / Orange Money): redirect to Bictorys hosted checkout.
-        // The buyer will be sent back to /order/success/:id on completion.
+        // Online payment: redirect first, cart cleared on return to avoid
+        // "aucun article" flash before the browser navigates away.
         window.location.href = data.checkoutUrl;
       } else {
-        // COD: navigate directly to the success/confirmation page
+        // COD: clear cart then navigate to success page
+        clear();
         navigate(`/order/success/${data.order.id}`, {
           state: { order: data.order, saleSlug },
         });

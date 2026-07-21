@@ -1,14 +1,20 @@
+import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Check, Phone, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
-
+import { useCart } from '@/stores/cart.store';
 
 export function OrderSuccessPage() {
   const { id } = useParams<{ id: string }>();
   const orderId = id ? Number(id) : null;
   useOrderSocket(orderId);
   const location = useLocation();
+  const clear = useCart((s) => s.clear);
+
+  // Clear cart on mount — handles both COD (already cleared) and online
+  // payments where the buyer returns from Bictorys hosted checkout.
+  useEffect(() => { clear(); }, [clear]);
   const navigate = useNavigate();
   const state = (location.state as { saleSlug?: string; buyerFirstName?: string } | null) ?? {};
   const saleSlug = state.saleSlug;
