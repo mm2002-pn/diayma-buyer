@@ -84,8 +84,8 @@ function QuantitySheet({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} />
+      {/* Backdrop — onPointerDown évite que le même tap qui ouvre le drawer le referme */}
+      <div className="fixed inset-0 z-40 bg-black/50" onPointerDown={(e) => { e.preventDefault(); onClose(); }} />
 
       {/* Sheet */}
       <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl shadow-2xl">

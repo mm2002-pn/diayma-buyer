@@ -1,19 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, ShieldCheck, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Loader2, Trash2, CreditCard, Truck } from 'lucide-react';
 
 import { useCart } from '@/stores/cart.store';
 import { checkoutApi, type CreateOrderResponse } from './checkout.api';
 import { extractError } from '@/lib/api';
 import { formatCfa } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/api';
-
-const PAYMENTS: { id: PaymentMethod; label: string; className: string; icon: string }[] = [
-  { id: 'ORANGE_MONEY', label: 'Orange Money', className: 'bg-orange_money text-white', icon: 'OM' },
-  { id: 'WAVE', label: 'Wave', className: 'bg-wave text-white', icon: '⌬' },
-  { id: 'COD', label: 'À la livraison', className: 'bg-white text-ink border-2 border-ink/15', icon: '🚚' },
-];
 
 const PHONE_RE = /^(\+221)?[0-9]{9}$/;
 
@@ -40,11 +34,8 @@ export function CheckoutPage() {
     mutationFn: checkoutApi.createOrder,
     onSuccess: (data: CreateOrderResponse) => {
       if (data.checkoutUrl) {
-        // Online payment: redirect first, cart cleared on return to avoid
-        // "aucun article" flash before the browser navigates away.
         window.location.href = data.checkoutUrl;
       } else {
-        // COD: clear cart then navigate to success page
         clear();
         navigate(`/order/success/${data.order.id}`, {
           state: { order: data.order, saleSlug },
@@ -160,22 +151,35 @@ export function CheckoutPage() {
 
         {/* Moyens de paiement */}
         <div className="space-y-3">
-          {PAYMENTS.map((p) => (
-            <button
-              key={p.id}
-              disabled={mutation.isPending}
-              onClick={() => onPay(p.id)}
-              className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 shadow-soft active:scale-[0.98] transition ${p.className} ${mutation.isPending && pendingMethod !== p.id ? 'opacity-40' : ''}`}
-            >
-              <span className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center text-base font-bold flex-shrink-0">
-                {p.icon}
-              </span>
-              <span>{p.label}</span>
-              {pendingMethod === p.id && (
-                <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
-              )}
-            </button>
-          ))}
+          {/* Paiement en ligne → Bictorys (Wave / Orange Money au choix sur leur page) */}
+          <button
+            disabled={mutation.isPending}
+            onClick={() => onPay('WAVE')}
+            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 bg-forest text-white shadow-soft active:scale-[0.98] transition ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
+          >
+            <span className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="h-5 w-5" />
+            </span>
+            <span>Payer en ligne</span>
+            {pendingMethod === 'WAVE' && (
+              <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
+            )}
+          </button>
+
+          {/* Paiement à la livraison */}
+          <button
+            disabled={mutation.isPending}
+            onClick={() => onPay('COD')}
+            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 bg-white text-ink border-2 border-ink/15 shadow-soft active:scale-[0.98] transition ${mutation.isPending && pendingMethod !== 'COD' ? 'opacity-40' : ''}`}
+          >
+            <span className="h-9 w-9 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0">
+              <Truck className="h-5 w-5" />
+            </span>
+            <span>À la livraison</span>
+            {pendingMethod === 'COD' && (
+              <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
+            )}
+          </button>
         </div>
 
         {/* Erreur */}
