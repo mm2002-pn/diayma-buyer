@@ -66,10 +66,15 @@ export function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
-        <div className="text-5xl mb-4">🛍️</div>
-        <div className="text-ink text-lg font-semibold mb-2">Aucun article</div>
-        <button className="btn-primary max-w-xs mt-4" onClick={() => navigate(`/s/${saleSlug}`)}>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white gap-4">
+        <div className="h-16 w-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-3xl">
+          🛍️
+        </div>
+        <div>
+          <div className="text-slate-800 text-base font-semibold mb-1">Aucun article</div>
+          <div className="text-slate-400 text-sm">Ton panier est vide.</div>
+        </div>
+        <button className="btn-primary max-w-xs mt-2" onClick={() => navigate(`/s/${saleSlug}`)}>
           Retour au catalogue
         </button>
       </div>
@@ -78,44 +83,48 @@ export function CheckoutPage() {
 
   return (
     <div className="flex-1 flex flex-col bg-white overflow-y-auto md:max-w-lg md:mx-auto md:w-full">
-      {/* Header dark */}
-      <div className="flex items-center bg-forest px-4 pt-3 pb-3 flex-shrink-0">
+      {/* Header */}
+      <div className="flex items-center bg-white/95 border-b border-slate-100 px-4 pt-3 pb-3 flex-shrink-0 sticky top-0 z-10 backdrop-blur-sm">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 -ml-2 text-white"
+          className="p-2 -ml-2 text-slate-400 hover:text-slate-700 transition-colors rounded-xl hover:bg-slate-50"
           disabled={mutation.isPending}
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex-1 text-center text-lg font-semibold text-white">Commander</div>
+        <div className="flex-1 flex justify-center">
+          <span className="font-extrabold text-base text-slate-900 tracking-tight">
+            Diayma<span className="text-[#0066FF]">.</span>
+          </span>
+        </div>
         <div className="w-9" />
       </div>
 
       <div className="flex-1 px-4 py-5 space-y-5">
-        {/* Articles */}
+        {/* Items */}
         <div className="space-y-2">
           {items.map((i) => (
             <div
               key={`${i.productId}-${i.variantId}`}
-              className="flex items-center gap-3 bg-cream-50 rounded-2xl p-3"
+              className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-2xl p-3"
             >
               {i.photoUrl ? (
                 <img src={i.photoUrl} className="h-14 w-14 rounded-xl object-cover flex-shrink-0" alt="" />
               ) : (
-                <div className="h-14 w-14 rounded-xl bg-cream-100 flex-shrink-0" />
+                <div className="h-14 w-14 rounded-xl bg-slate-100 flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-ink text-sm truncate">{i.productName}</div>
+                <div className="font-semibold text-slate-800 text-sm truncate leading-tight">{i.productName}</div>
                 {i.variantLabel && (
-                  <div className="text-xs text-ink/50">{i.variantLabel}</div>
+                  <div className="text-xs text-slate-400 mt-0.5 font-medium">{i.variantLabel}</div>
                 )}
-                <div className="text-sm font-semibold text-ink mt-0.5">
+                <div className="text-sm font-bold text-slate-900 mt-1">
                   {formatCfa(i.priceCfa)} × {i.quantity}
                 </div>
               </div>
               <button
                 onClick={() => removeItem(i.productId, i.variantId)}
-                className="p-1.5 text-ink/30"
+                className="p-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
                 aria-label="Retirer"
               >
                 <Trash2 className="h-4 w-4" />
@@ -125,14 +134,14 @@ export function CheckoutPage() {
         </div>
 
         {/* Total */}
-        <div className="flex items-center justify-between px-1">
-          <span className="text-ink/60 font-medium">Total</span>
-          <span className="text-2xl font-bold text-ink">{formatCfa(totalCfa)}</span>
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3.5">
+          <span className="text-slate-600 font-semibold text-sm">Total à payer</span>
+          <span className="text-2xl font-extrabold text-slate-900 font-display">{formatCfa(totalCfa)}</span>
         </div>
 
-        {/* Téléphone */}
+        {/* Phone */}
         <div>
-          <label className="text-sm font-semibold text-ink/70 block mb-2">
+          <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wider">
             Ton numéro de téléphone
           </label>
           <input
@@ -142,57 +151,67 @@ export function CheckoutPage() {
             placeholder="+221 77 000 00 00"
             value={phone}
             onChange={(e) => { setPhone(e.target.value); setPhoneError(''); }}
-            className="w-full h-14 rounded-2xl bg-cream-100 px-4 text-ink text-base placeholder:text-ink/35 outline-none focus:ring-2 focus:ring-forest/30"
+            className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-4 text-slate-900 text-base placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-[#0066FF]/25 focus:border-[#0066FF]/40 transition-all"
           />
           {phoneError && (
-            <p className="text-xs text-red-600 mt-1.5 ml-1">{phoneError}</p>
+            <p className="text-xs text-red-500 mt-2 ml-1 font-medium">{phoneError}</p>
           )}
         </div>
 
-        {/* Moyens de paiement */}
-        <div className="space-y-3">
-          {/* Paiement en ligne → Bictorys (Wave / Orange Money au choix sur leur page) */}
+        {/* Payment */}
+        <div className="space-y-2.5">
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Choisir le paiement
+          </div>
+
+          {/* Online */}
           <button
             disabled={mutation.isPending}
             onClick={() => onPay('WAVE')}
-            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 bg-forest text-white shadow-soft active:scale-[0.98] transition ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
+            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-[#0066FF] text-white shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
           >
-            <span className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+            <span className="h-9 w-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
               <CreditCard className="h-5 w-5" />
             </span>
-            <span>Payer en ligne</span>
+            <div className="text-left">
+              <div className="text-sm font-bold">Payer en ligne</div>
+              <div className="text-xs text-white/60 font-normal">Wave · Orange Money</div>
+            </div>
             {pendingMethod === 'WAVE' && (
               <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
             )}
           </button>
 
-          {/* Paiement à la livraison */}
+          {/* COD */}
           <button
             disabled={mutation.isPending}
             onClick={() => onPay('COD')}
-            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3 px-5 bg-white text-ink border-2 border-ink/15 shadow-soft active:scale-[0.98] transition ${mutation.isPending && pendingMethod !== 'COD' ? 'opacity-40' : ''}`}
+            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-white text-slate-800 border-2 border-slate-200 shadow-soft active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'COD' ? 'opacity-40' : ''}`}
           >
-            <span className="h-9 w-9 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0">
-              <Truck className="h-5 w-5" />
+            <span className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+              <Truck className="h-5 w-5 text-slate-500" />
             </span>
-            <span>À la livraison</span>
+            <div className="text-left">
+              <div className="text-sm font-bold">À la livraison</div>
+              <div className="text-xs text-slate-400 font-normal">Paye à réception</div>
+            </div>
             {pendingMethod === 'COD' && (
-              <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
+              <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-50 text-slate-500" />
             )}
           </button>
         </div>
 
-        {/* Erreur */}
+        {/* Error */}
         {error && (
-          <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          <div className="rounded-2xl bg-red-50 border border-red-100 p-4 text-sm text-red-600 font-medium">
             {error}
           </div>
         )}
 
-        {/* Sécurité */}
-        <div className="flex items-center justify-center gap-2 text-xs text-ink/35 pb-2">
-          <ShieldCheck className="h-4 w-4" />
-          Paiement sécurisé
+        {/* Security */}
+        <div className="flex items-center justify-center gap-2 text-xs text-slate-300 pb-2 font-medium">
+          <ShieldCheck className="h-3.5 w-3.5 text-[#0066FF]/40" />
+          Paiement sécurisé · Données chiffrées
         </div>
       </div>
     </div>

@@ -108,14 +108,14 @@ function QuantitySheet({
             )}
             <div className="flex-1 min-w-0">
               {product.name && (
-                <div className="font-semibold text-ink text-base leading-tight">{product.name}</div>
+                <div className="font-semibold text-slate-800 text-base leading-tight">{product.name}</div>
               )}
-              <div className="text-xl font-bold text-ink mt-0.5">
+              <div className="text-xl font-bold text-slate-900 mt-0.5">
                 {product.priceCfa.toLocaleString('fr-FR')}{' '}
-                <span className="text-sm font-semibold">F CFA</span>
+                <span className="text-sm font-semibold text-slate-500">F CFA</span>
               </div>
             </div>
-            <button onClick={onClose} className="p-1 text-ink/30 flex-shrink-0">
+            <button onClick={onClose} className="p-1.5 text-slate-300 hover:text-slate-500 rounded-lg hover:bg-slate-50 transition-colors flex-shrink-0">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -128,7 +128,7 @@ function QuantitySheet({
                 const selected = selectedByType.get(type);
                 return (
                   <div key={type}>
-                    <div className="text-xs font-semibold text-ink/50 uppercase tracking-wider mb-2">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                       {VARIANT_LABELS[type]}
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -145,12 +145,12 @@ function QuantitySheet({
                               setSelectedByType(next);
                               setQty(1);
                             }}
-                            className={`min-w-[48px] h-10 px-3 rounded-xl text-sm font-semibold border transition ${
+                            className={`min-w-[48px] h-10 px-3 rounded-xl text-sm font-semibold border transition-all ${
                               active
-                                ? 'bg-forest text-white border-forest'
+                                ? 'bg-[#0066FF] text-white border-[#0066FF]'
                                 : disabled
-                                ? 'text-ink/20 border-ink/10 line-through'
-                                : 'text-ink border-ink/20'
+                                ? 'text-slate-300 border-slate-100 line-through'
+                                : 'text-slate-700 border-slate-200 hover:border-[#0066FF]/40'
                             }`}
                           >
                             {v.value}
@@ -167,20 +167,20 @@ function QuantitySheet({
           {/* Quantité */}
           {!isOutOfStock && (
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-ink/60">Quantité</span>
+              <span className="text-sm font-semibold text-slate-500">Quantité</span>
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
                   disabled={qty <= 1}
-                  className="h-9 w-9 rounded-full bg-cream-100 flex items-center justify-center text-ink disabled:opacity-30 transition"
+                  className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 disabled:opacity-30 hover:bg-slate-200 transition-colors"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
-                <span className="text-lg font-bold text-ink w-6 text-center">{qty}</span>
+                <span className="text-lg font-bold text-slate-900 w-6 text-center">{qty}</span>
                 <button
                   onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
                   disabled={qty >= maxQty}
-                  className="h-9 w-9 rounded-full bg-forest flex items-center justify-center text-white disabled:opacity-30 transition"
+                  className="h-9 w-9 rounded-full bg-[#0066FF] flex items-center justify-center text-white disabled:opacity-30 hover:bg-[#0052CC] transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -194,7 +194,7 @@ function QuantitySheet({
               Rupture de stock
             </button>
           ) : added ? (
-            <button disabled className="btn-primary bg-green-600">
+            <button disabled className="w-full h-14 rounded-full bg-emerald-600 text-white font-semibold text-base flex items-center justify-center gap-2">
               ✓ Ajouté · {formatCfa(product.priceCfa * qty)}
             </button>
           ) : (
@@ -313,16 +313,22 @@ export function CatalogPage() {
 
   if (isLoading || livesQuery.isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-forest" />
+      <div className="flex-1 flex flex-col items-center justify-center gap-4">
+        <div className="h-10 w-10 rounded-xl bg-forest flex items-center justify-center">
+          <span className="font-display text-cream text-lg font-bold">D</span>
+        </div>
+        <Loader2 className="h-5 w-5 animate-spin text-forest/50" />
       </div>
     );
   }
   if (error || !data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <div className="text-ink text-lg font-semibold">Boutique introuvable</div>
-        <div className="text-ink/50 text-sm mt-2">Vérifie le lien avec la vendeuse.</div>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-3">
+        <div className="h-14 w-14 rounded-2xl bg-clay/10 flex items-center justify-center">
+          <ImageOff className="h-6 w-6 text-clay/50" />
+        </div>
+        <div className="text-ink text-base font-semibold">Boutique introuvable</div>
+        <div className="text-ink/45 text-sm">Vérifie le lien avec la vendeuse.</div>
       </div>
     );
   }
@@ -338,19 +344,19 @@ export function CatalogPage() {
       <div className="flex-1 flex flex-col bg-white">
         <ShopHeader seller={seller} liveActive={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
-          <div className="h-24 w-24 rounded-full bg-ink/5 flex items-center justify-center">
-            <Radio className="h-10 w-10 text-ink/20" />
+          <div className="h-20 w-20 rounded-3xl bg-cream-100 flex items-center justify-center border border-cream-200">
+            <Radio className="h-8 w-8 text-ink/25" />
           </div>
           <div>
-            <div className="font-display text-2xl font-semibold text-ink mb-2">
+            <div className="font-display text-2xl font-medium text-ink mb-2 tracking-tight">
               {seller.shopName ?? seller.name}
             </div>
-            <p className="text-ink/60 text-base">Pas de live en cours pour l'instant.</p>
-            <p className="text-ink/40 text-sm mt-1">
+            <p className="text-ink/55 text-base leading-relaxed">Pas de live en cours pour l'instant.</p>
+            <p className="text-ink/35 text-sm mt-1.5">
               La boutique s'ouvrira dès que la vendeuse démarre son live.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-ink/40">
+          <div className="flex items-center gap-2 text-xs text-ink/35 font-medium bg-cream-50 border border-cream-200 rounded-full px-4 py-2">
             <Loader2 className="h-3 w-3 animate-spin" />
             Vérification automatique toutes les 30s…
           </div>
@@ -392,12 +398,12 @@ export function CatalogPage() {
 
         {/* Dots */}
         {products.length > 1 && (
-          <div className="flex justify-center gap-2 pt-3 pb-1">
+          <div className="flex justify-center gap-1.5 pt-3 pb-1">
             {products.map((_, i) => (
               <div
                 key={i}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === selectedIdx ? 'w-6 bg-gold' : 'w-2 bg-ink/15'
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === selectedIdx ? 'w-5 bg-[#0066FF]' : 'w-1.5 bg-slate-200'
                 }`}
               />
             ))}

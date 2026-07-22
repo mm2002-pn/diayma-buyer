@@ -33,12 +33,18 @@ export default {
           50:  '#FBEBE5',
         },
         ink: '#1A1815',
+        brand: {
+          DEFAULT: '#0066FF',
+          hover:   '#0052CC',
+          light:   '#EFF6FF',
+          50:      '#EFF6FF',
+        },
         // Paiements
         orange_money: '#F58220',
         wave:         '#1BC7C7',
       },
       fontFamily: {
-        sans: ['Manrope', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['Fraunces', 'Georgia', 'serif'],
         serif: ['Fraunces', 'Georgia', 'serif'],
       },

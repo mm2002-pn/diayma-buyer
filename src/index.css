@@ -10,15 +10,14 @@
     margin: 0;
     color: #1A1815;
     @apply bg-white antialiased;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-feature-settings: 'ss01', 'ss02'; /* Manrope stylistic sets */
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
   html {
     -webkit-text-size-adjust: 100%;
     touch-action: manipulation;
     overscroll-behavior: none;
+    scroll-behavior: smooth;
   }
-  /* Fraunces optical size + subtle serif details */
   .font-display, .font-serif {
     font-optical-sizing: auto;
     font-feature-settings: 'ss01';
@@ -26,21 +25,20 @@
 }
 
 @layer components {
-  /* Bouton principal — actions primaires (Commander, Continuer, Payer) */
+  /* Primary — bleu Diayma, aligné sur le landing seller */
   .btn-primary {
-    @apply w-full h-14 rounded-full bg-forest text-white text-base font-semibold tracking-tight
+    @apply w-full h-14 rounded-full bg-brand text-white text-base font-semibold tracking-tight
            flex items-center justify-center gap-2 shadow-soft active:scale-[0.98]
-           transition-all disabled:opacity-40 disabled:pointer-events-none hover:bg-forest/90;
+           transition-all disabled:opacity-40 disabled:pointer-events-none hover:bg-brand-hover;
   }
   .btn-secondary {
-    @apply w-full h-14 rounded-full bg-white text-forest text-base font-semibold tracking-tight
-           border border-forest/20 flex items-center justify-center gap-2
-           shadow-soft active:scale-[0.98] transition-all hover:border-forest/40;
+    @apply w-full h-14 rounded-full bg-white text-slate-800 text-base font-semibold tracking-tight
+           border border-slate-200 flex items-center justify-center gap-2
+           shadow-soft active:scale-[0.98] transition-all hover:border-slate-300;
   }
-  /* Bouton "sm" — actions secondaires (Ajouter au panier sur card) */
   .btn-sm {
-    @apply h-10 px-4 rounded-full bg-forest text-white text-sm font-semibold
-           flex items-center justify-center gap-1.5 hover:bg-forest/90 transition-colors
+    @apply h-10 px-4 rounded-full bg-brand text-white text-sm font-semibold
+           flex items-center justify-center gap-1.5 hover:bg-brand-hover transition-colors
            disabled:opacity-40 disabled:pointer-events-none;
   }
 }
