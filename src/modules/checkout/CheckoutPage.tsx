@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, ShieldCheck, Loader2, Trash2, CreditCard, Truck } from 'lucide-react';
 
@@ -14,6 +14,8 @@ const PHONE_RE = /^(\+221)?[0-9]{9}$/;
 export function CheckoutPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const liveId: number | null = (state as { liveId?: number | null })?.liveId ?? null;
 
   const allItems = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
@@ -54,6 +56,7 @@ export function CheckoutPage() {
     setError(null);
     setPendingMethod(method);
     mutation.mutate({
+      liveId,
       buyerPhone: phone,
       paymentMethod: method,
       items: items.map((i) => ({

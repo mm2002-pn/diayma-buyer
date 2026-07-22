@@ -18,6 +18,7 @@ interface Props {
   products: Product[];
   saleSlug: string;
   liveActive: boolean;
+  activeLiveId?: number | null;
   cartTotalQty: number;
   cartTotalCfa: number;
 }
@@ -184,7 +185,7 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
 
 const FILTERS = ['Tous', 'Nouveautés', 'Rupture'] as const;
 
-export function CatalogDesktop({ seller, products, saleSlug, liveActive, cartTotalQty, cartTotalCfa }: Props) {
+export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeLiveId, cartTotalQty, cartTotalCfa }: Props) {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<(typeof FILTERS)[number]>('Tous');
 
@@ -238,7 +239,7 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, cartTot
           {/* Cart */}
           <button
             disabled={cartTotalQty === 0}
-            onClick={() => navigate(`/s/${saleSlug}/checkout`)}
+            onClick={() => navigate(`/s/${saleSlug}/checkout`, { state: { liveId: activeLiveId ?? null } })}
             className="relative flex items-center gap-2 rounded-full bg-[#0066FF] text-white pl-4 pr-5 h-10 font-semibold text-sm hover:bg-[#0052CC] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-md shadow-blue-500/20 shrink-0"
           >
             <ShoppingBag className="h-4 w-4 shrink-0" />

@@ -334,9 +334,10 @@ export function CatalogPage() {
   }
 
   const { seller } = data;
-  const liveActive = (livesQuery.data ?? []).some(
+  const activeLive = (livesQuery.data ?? []).find(
     (l) => l.sellerId === seller.id && l.status === 'LIVE',
   );
+  const liveActive = !!activeLive;
 
   // Écran d'attente si pas de live
   if (!liveActive) {
@@ -372,6 +373,7 @@ export function CatalogPage() {
         products={products}
         saleSlug={saleSlug!}
         liveActive={liveActive}
+        activeLiveId={activeLive?.id ?? null}
         cartTotalQty={cartTotalQty}
         cartTotalCfa={cartTotalCfa}
       />
@@ -415,7 +417,7 @@ export function CatalogPage() {
           {cartTotalQty > 0 ? (
             <button
               className="btn-primary"
-              onClick={() => navigate(`/s/${saleSlug}/checkout`)}
+              onClick={() => navigate(`/s/${saleSlug}/checkout`, { state: { liveId: activeLive?.id ?? null } })}
             >
               <ShoppingCart className="h-5 w-5" />
               <span>Commander</span>
