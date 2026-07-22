@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, ShieldCheck, Loader2, Trash2, CreditCard, Truck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Loader2, Trash2, Truck } from 'lucide-react';
 
 import { useCart } from '@/stores/cart.store';
 import { checkoutApi, type CreateOrderResponse } from './checkout.api';
@@ -173,8 +173,22 @@ export function CheckoutPage() {
             onClick={() => onPay('WAVE')}
             className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-[#0066FF] text-white shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
           >
-            <span className="h-9 w-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="h-5 w-5" />
+            {/* Logos Wave + Orange Money */}
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Wave */}
+              <span className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none">
+                  <rect width="32" height="32" rx="8" fill="#1F56DE"/>
+                  <path d="M7 20.5 C9.5 20.5 10.5 13 13 13 C15.5 13 15.5 20.5 18 20.5 C20.5 20.5 21.5 13 24 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                </svg>
+              </span>
+              {/* Orange Money */}
+              <span className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none">
+                  <rect width="32" height="32" rx="8" fill="#FF6600"/>
+                  <text x="16" y="21" textAnchor="middle" fontSize="11" fontWeight="800" fontFamily="Arial, sans-serif" fill="white">OM</text>
+                </svg>
+              </span>
             </span>
             <div className="text-left">
               <div className="text-sm font-bold">Payer en ligne</div>
