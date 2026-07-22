@@ -9,7 +9,7 @@ import { extractError } from '@/lib/api';
 import { formatCfa } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/api';
 
-const PHONE_RE = /^(\+221)?[0-9]{9}$/;
+const PHONE_RE = /^[0-9]{9}$/;
 
 export function CheckoutPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
@@ -49,7 +49,7 @@ export function CheckoutPage() {
 
   function onPay(method: PaymentMethod) {
     if (!PHONE_RE.test(phone)) {
-      setPhoneError('Numéro invalide · ex : +221771234567');
+      setPhoneError('Numéro invalide · ex : 77 123 45 67');
       return;
     }
     setPhoneError('');
@@ -57,7 +57,7 @@ export function CheckoutPage() {
     setPendingMethod(method);
     mutation.mutate({
       liveId,
-      buyerPhone: phone,
+      buyerPhone: `+221${phone}`,
       paymentMethod: method,
       items: items.map((i) => ({
         productId: i.productId,
@@ -147,15 +147,21 @@ export function CheckoutPage() {
           <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wider">
             Ton numéro de téléphone
           </label>
-          <input
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="+221 77 000 00 00"
-            value={phone}
-            onChange={(e) => { setPhone(e.target.value); setPhoneError(''); }}
-            className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200 px-4 text-slate-900 text-base placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-[#0066FF]/25 focus:border-[#0066FF]/40 transition-all"
-          />
+          <div className="flex items-center h-14 rounded-2xl bg-slate-50 border border-slate-200 focus-within:ring-2 focus-within:ring-[#0066FF]/25 focus-within:border-[#0066FF]/40 transition-all overflow-hidden">
+            <span className="flex-shrink-0 px-4 text-slate-400 text-base font-semibold border-r border-slate-200 h-full flex items-center select-none">
+              +221
+            </span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              placeholder="77 000 00 00"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '')); setPhoneError(''); }}
+              maxLength={9}
+              className="flex-1 h-full bg-transparent px-4 text-slate-900 text-base placeholder:text-slate-300 outline-none"
+            />
+          </div>
           {phoneError && (
             <p className="text-xs text-red-500 mt-2 ml-1 font-medium">{phoneError}</p>
           )}
