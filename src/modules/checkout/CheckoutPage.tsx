@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, ShieldCheck, Loader2, Trash2, Truck } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { ArrowLeft, ShieldCheck, Loader2, Trash2, Truck, Minus, Plus } from 'lucide-react';
 
 import { useCart } from '@/stores/cart.store';
 import { checkoutApi, type CreateOrderResponse } from './checkout.api';
+import { shopApi } from '@/modules/shop/shop.api';
 import { extractError } from '@/lib/api';
 import { formatCfa } from '@/lib/utils';
 import type { PaymentMethod } from '@/types/api';
@@ -20,12 +21,40 @@ export function CheckoutPage() {
   const allItems = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const removeItem = useCart((s) => s.remove);
+  const updateQty = useCart((s) => s.updateQty);
 
   const items = useMemo(
     () => (saleSlug ? allItems.filter((i) => i.saleSlug === saleSlug) : []),
     [allItems, saleSlug],
   );
   const totalCfa = items.reduce((acc, i) => acc + i.priceCfa * i.quantity, 0);
+
+  // Stock courant — re-fetch à l'ouverture du checkout pour revalidation
+  const { data: shopData } = useQuery({
+    queryKey: ['shop', saleSlug],
+    queryFn: () => shopApi.bySaleSlug(saleSlug!),
+    enabled: !!saleSlug,
+    staleTime: 0, // toujours frais au checkout
+  });
+
+  const stockMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of shopData?.products ?? []) {
+      if (p.variants.length > 0) {
+        for (const v of p.variants) map.set(`${p.id}-${v.id}`, v.stock);
+      } else {
+        map.set(`${p.id}-null`, p.stock);
+      }
+    }
+    return map;
+  }, [shopData]);
+
+  const getStock = (productId: number, variantId: number | null): number =>
+    stockMap.get(`${productId}-${variantId ?? 'null'}`) ?? Infinity;
+
+  // True si au moins un article dépasse le stock disponible (données chargées)
+  const hasStockIssue = shopData != null &&
+    items.some((i) => i.quantity > getStock(i.productId, i.variantId));
 
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -48,6 +77,7 @@ export function CheckoutPage() {
   });
 
   function onPay(method: PaymentMethod) {
+    if (hasStockIssue) return;
     if (!PHONE_RE.test(phone)) {
       setPhoneError('Numéro invalide · ex : 77 123 45 67');
       return;
@@ -106,34 +136,79 @@ export function CheckoutPage() {
       <div className="flex-1 px-4 py-5 space-y-5">
         {/* Items */}
         <div className="space-y-2">
-          {items.map((i) => (
-            <div
-              key={`${i.productId}-${i.variantId}`}
-              className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-2xl p-3"
-            >
-              {i.photoUrl ? (
-                <img src={i.photoUrl} className="h-14 w-14 rounded-xl object-cover flex-shrink-0" alt="" />
-              ) : (
-                <div className="h-14 w-14 rounded-xl bg-slate-100 flex-shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-slate-800 text-sm truncate leading-tight">{i.productName}</div>
-                {i.variantLabel && (
-                  <div className="text-xs text-slate-400 mt-0.5 font-medium">{i.variantLabel}</div>
+          {items.map((i) => {
+            const stock = getStock(i.productId, i.variantId);
+            const isOverStock = stock !== Infinity && i.quantity > stock;
+            const isOutOfStock = stock === 0;
+            return (
+              <div
+                key={`${i.productId}-${i.variantId}`}
+                className={`flex items-center gap-3 rounded-2xl p-3 border ${isOverStock ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'}`}
+              >
+                {i.photoUrl ? (
+                  <img src={i.photoUrl} className="h-14 w-14 rounded-xl object-cover flex-shrink-0" alt="" />
+                ) : (
+                  <div className="h-14 w-14 rounded-xl bg-slate-100 flex-shrink-0" />
                 )}
-                <div className="text-sm font-bold text-slate-900 mt-1">
-                  {formatCfa(i.priceCfa)} × {i.quantity}
+
+                {/* Name + variant + unit price */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-slate-800 text-sm truncate leading-tight">{i.productName}</div>
+                  {i.variantLabel && (
+                    <div className="text-xs text-slate-400 mt-0.5 font-medium">{i.variantLabel}</div>
+                  )}
+                  <div className="text-xs text-slate-400 mt-1">{formatCfa(i.priceCfa)} / unité</div>
+                  {isOutOfStock && (
+                    <div className="text-xs text-red-500 font-semibold mt-0.5">Rupture de stock</div>
+                  )}
+                  {isOverStock && !isOutOfStock && (
+                    <div className="text-xs text-red-500 font-semibold mt-0.5">
+                      Stock disponible : {stock}
+                    </div>
+                  )}
+                </div>
+
+                {/* Subtotal + stepper */}
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <div className="text-sm font-extrabold text-slate-900 tabular-nums">
+                    {formatCfa(i.priceCfa * i.quantity)}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {/* Minus — devient poubelle à qty=1 */}
+                    <button
+                      onClick={() =>
+                        i.quantity <= 1
+                          ? removeItem(i.productId, i.variantId)
+                          : updateQty(i.productId, i.variantId, i.quantity - 1)
+                      }
+                      disabled={mutation.isPending}
+                      className="h-7 w-7 rounded-full border border-slate-200 bg-white flex items-center justify-center transition-all active:scale-90 hover:bg-slate-100 disabled:opacity-40"
+                      aria-label="Réduire la quantité"
+                    >
+                      {i.quantity <= 1
+                        ? <Trash2 className="h-3 w-3 text-red-400" />
+                        : <Minus className="h-3 w-3 text-slate-500" />
+                      }
+                    </button>
+
+                    <span className="text-sm font-bold text-slate-900 w-5 text-center tabular-nums select-none">
+                      {i.quantity}
+                    </span>
+
+                    {/* Plus — désactivé si stock atteint */}
+                    <button
+                      onClick={() => updateQty(i.productId, i.variantId, i.quantity + 1)}
+                      disabled={i.quantity >= stock || mutation.isPending}
+                      className="h-7 w-7 rounded-full border border-slate-200 bg-white flex items-center justify-center transition-all active:scale-90 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label="Augmenter la quantité"
+                    >
+                      <Plus className="h-3 w-3 text-slate-500" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => removeItem(i.productId, i.variantId)}
-                className="p-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                aria-label="Retirer"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Total */}
@@ -141,6 +216,13 @@ export function CheckoutPage() {
           <span className="text-slate-600 font-semibold text-sm">Total à payer</span>
           <span className="text-2xl font-extrabold text-slate-900 font-display">{formatCfa(totalCfa)}</span>
         </div>
+
+        {/* Bannière stock insuffisant */}
+        {hasStockIssue && (
+          <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 font-medium">
+            Certains articles dépassent le stock disponible. Ajuste les quantités pour continuer.
+          </div>
+        )}
 
         {/* Phone */}
         <div>
@@ -175,7 +257,7 @@ export function CheckoutPage() {
 
           {/* Online */}
           <button
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || hasStockIssue}
             onClick={() => onPay('WAVE')}
             className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-[#0066FF] text-white shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
           >
@@ -207,7 +289,7 @@ export function CheckoutPage() {
 
           {/* COD */}
           <button
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || hasStockIssue}
             onClick={() => onPay('COD')}
             className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-white text-slate-800 border-2 border-slate-200 shadow-soft active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'COD' ? 'opacity-40' : ''}`}
           >
