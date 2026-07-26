@@ -170,21 +170,31 @@ function QuantitySheet({
           {!isOutOfStock && (
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-slate-500">Quantité</span>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 h-10 rounded-full bg-slate-50 border border-slate-200 px-3">
                 <button
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
                   disabled={qty <= 1}
-                  className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 disabled:opacity-30 hover:bg-slate-200 transition-colors"
+                  className="h-7 w-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 disabled:opacity-30 hover:bg-slate-300 transition-colors"
                 >
-                  <Minus className="h-4 w-4" />
+                  <Minus className="h-3.5 w-3.5" />
                 </button>
-                <span className="text-lg font-bold text-slate-900 w-6 text-center">{qty}</span>
+                <input
+                  type="number"
+                  value={qty}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setQty(Math.max(1, Math.min(maxQty, val)));
+                  }}
+                  min="1"
+                  max={maxQty}
+                  className="w-12 h-full bg-transparent text-center font-bold text-slate-900 outline-none"
+                />
                 <button
                   onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
                   disabled={qty >= maxQty}
-                  className="h-9 w-9 rounded-full bg-[#C9A84C] flex items-center justify-center text-white disabled:opacity-30 hover:bg-[#B8903A] transition-colors"
+                  className="h-7 w-7 rounded-full bg-[#C9A84C] flex items-center justify-center text-white disabled:opacity-30 hover:bg-[#B8903A] transition-colors"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
