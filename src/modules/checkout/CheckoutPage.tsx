@@ -127,13 +127,13 @@ export function CheckoutPage() {
         </button>
         <div className="flex-1 flex justify-center">
           <span className="font-extrabold text-base text-slate-900 tracking-tight">
-            Diayma<span className="text-[#0066FF]">.</span>
+            Diayma<span className="text-[#C9A84C]">.</span>
           </span>
         </div>
         <div className="w-9" />
       </div>
 
-      <div className="flex-1 px-4 py-5 space-y-5">
+      <div className="flex-1 px-4 py-6 md:py-8 space-y-5">
         {/* Items */}
         <div className="space-y-2">
           {items.map((i) => {
@@ -214,7 +214,7 @@ export function CheckoutPage() {
         {/* Total */}
         <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3.5">
           <span className="text-slate-600 font-semibold text-sm">Total à payer</span>
-          <span className="text-2xl font-extrabold text-slate-900 font-display">{formatCfa(totalCfa)}</span>
+          <span className="text-2xl font-extrabold text-slate-900">{formatCfa(totalCfa)}</span>
         </div>
 
         {/* Bannière stock insuffisant */}
@@ -229,7 +229,7 @@ export function CheckoutPage() {
           <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wider">
             Ton numéro de téléphone
           </label>
-          <div className="flex items-center h-14 rounded-2xl bg-slate-50 border border-slate-200 focus-within:ring-2 focus-within:ring-[#0066FF]/25 focus-within:border-[#0066FF]/40 transition-all overflow-hidden">
+          <div className="flex items-center h-14 rounded-2xl bg-slate-50 border border-slate-200 focus-within:ring-2 focus-within:ring-[#C9A84C]/25 focus-within:border-[#C9A84C]/40 transition-all overflow-hidden">
             <span className="flex-shrink-0 px-4 text-slate-400 text-base font-semibold border-r border-slate-200 h-full flex items-center select-none">
               +221
             </span>
@@ -259,24 +259,14 @@ export function CheckoutPage() {
           <button
             disabled={mutation.isPending || hasStockIssue}
             onClick={() => onPay('WAVE')}
-            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-[#0066FF] text-white shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
+            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-[#C9A84C] text-white shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
           >
             {/* Logos Wave + Orange Money */}
             <span className="flex items-center gap-1.5 flex-shrink-0">
               {/* Wave */}
-              <span className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none">
-                  <rect width="32" height="32" rx="8" fill="#1F56DE"/>
-                  <path d="M7 20.5 C9.5 20.5 10.5 13 13 13 C15.5 13 15.5 20.5 18 20.5 C20.5 20.5 21.5 13 24 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                </svg>
-              </span>
+              <img src="/logo-wave.webp" alt="Wave" className="h-8 w-8 rounded-lg shadow-sm" />
               {/* Orange Money */}
-              <span className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none">
-                  <rect width="32" height="32" rx="8" fill="#FF6600"/>
-                  <text x="16" y="21" textAnchor="middle" fontSize="11" fontWeight="800" fontFamily="Arial, sans-serif" fill="white">OM</text>
-                </svg>
-              </span>
+              <img src="/logo-orange-money.png" alt="Orange Money" className="h-8 w-8 rounded-lg shadow-sm" />
             </span>
             <div className="text-left">
               <div className="text-sm font-bold">Payer en ligne</div>
@@ -315,7 +305,7 @@ export function CheckoutPage() {
 
         {/* Security */}
         <div className="flex items-center justify-center gap-2 text-xs text-slate-300 pb-2 font-medium">
-          <ShieldCheck className="h-3.5 w-3.5 text-[#0066FF]/40" />
+          <ShieldCheck className="h-3.5 w-3.5 text-[#C9A84C]/40" />
           Paiement sécurisé · Données chiffrées
         </div>
       </div>

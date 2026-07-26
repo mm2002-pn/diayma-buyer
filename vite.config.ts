@@ -1,17 +1,19 @@
 import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Diayma',
-        short_name: 'Diayma',
+        name: 'diayema',
+        short_name: 'diayema',
         description: 'Achète direct chez ta vendeuse préférée',
         theme_color: '#0F5B3A',
         background_color: '#F5EDD9',

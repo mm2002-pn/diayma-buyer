@@ -11,6 +11,8 @@ const VARIANT_LABELS: Record<VariantType, string> = {
   COULEUR: 'Couleur',
   TAILLE: 'Taille',
   POINTURE: 'Pointure',
+  PLAT: 'Plat',
+  PIECE: 'Pièce',
 };
 
 interface Props {
@@ -142,10 +144,10 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
                           }}
                           className={`min-w-[36px] h-7 px-2.5 rounded-lg text-xs font-semibold border transition-all ${
                             active
-                              ? 'bg-[#0066FF] text-white border-[#0066FF]'
+                              ? 'bg-[#C9A84C] text-white border-[#C9A84C]'
                               : disabled
                               ? 'text-slate-300 border-slate-100 line-through cursor-not-allowed'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-[#0066FF]/50 hover:text-[#0066FF]'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-[#C9A84C]/50 hover:text-[#C9A84C]'
                           }`}
                         >
                           {v.value}
@@ -172,7 +174,7 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
         ) : (
           <button
             onClick={handleAdd}
-            className="w-full h-10 rounded-xl bg-[#0066FF] text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#0052CC] active:scale-[0.98] transition-all shadow-sm shadow-blue-500/20"
+            className="w-full h-10 rounded-xl bg-[#C9A84C] text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#B8903A] active:scale-[0.98] transition-all shadow-sm shadow-blue-500/20"
           >
             <ShoppingCart className="h-4 w-4" />
             Ajouter au panier
@@ -209,12 +211,12 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
         <div className="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between gap-6">
           {/* Logo */}
           <button onClick={() => navigate('/')} className="hover:opacity-75 transition-opacity shrink-0">
-            <Logo size="sm" variant="light" />
+            <Logo size="sm" />
           </button>
 
           {/* Seller info — centre */}
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-full bg-[#0066FF]/10 border border-[#0066FF]/20 flex items-center justify-center text-[#0066FF] text-xs font-bold shrink-0">
+            <div className="h-8 w-8 rounded-full bg-[#C9A84C]/10 border border-[#C9A84C]/20 flex items-center justify-center text-[#C9A84C] text-xs font-bold shrink-0">
               {seller.name[0]?.toUpperCase()}
             </div>
             <div className="leading-tight">
@@ -240,7 +242,7 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
           <button
             disabled={cartTotalQty === 0}
             onClick={() => navigate(`/s/${saleSlug}/checkout`, { state: { liveId: activeLiveId ?? null } })}
-            className="relative flex items-center gap-2 rounded-full bg-[#0066FF] text-white pl-4 pr-5 h-10 font-semibold text-sm hover:bg-[#0052CC] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-md shadow-blue-500/20 shrink-0"
+            className="relative flex items-center gap-2 rounded-full bg-[#C9A84C] text-white pl-4 pr-5 h-10 font-semibold text-sm hover:bg-[#B8903A] disabled:opacity-30 disabled:pointer-events-none transition-all shadow-md shadow-blue-500/20 shrink-0"
           >
             <ShoppingBag className="h-4 w-4 shrink-0" />
             <span className="whitespace-nowrap">
@@ -286,12 +288,12 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
               { icon: Clock, value: '24h', label: 'Livraison' },
               { icon: CreditCard, value: '3', label: 'Paiements' },
             ].map(({ icon: Icon, value, label }) => (
-              <div key={label} className="px-6 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                  <Icon className="h-3.5 w-3.5 text-[#0066FF]" />
-                  <span className="font-display font-semibold text-2xl text-slate-900 leading-none">{value}</span>
+              <div key={label} className="px-8 text-center group">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Icon className="h-4 w-4 text-[#C9A84C]" />
+                  <span className="text-5xl font-extrabold text-[#C9A84C] group-hover:scale-110 transition-transform leading-none">{value}</span>
                 </div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-[0.12em] font-bold">{label}</div>
+                <div className="text-[11px] text-slate-400 uppercase tracking-[0.12em] font-bold">{label}</div>
               </div>
             ))}
           </div>
@@ -314,7 +316,7 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
                   onClick={() => setActiveFilter(f)}
                   className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-between ${
                     activeFilter === f
-                      ? 'bg-[#0066FF] text-white'
+                      ? 'bg-[#C9A84C] text-white'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
@@ -360,7 +362,7 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
                   onClick={() => setActiveFilter(f)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                     activeFilter === f
-                      ? 'bg-[#0066FF] text-white'
+                      ? 'bg-[#C9A84C] text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -389,7 +391,7 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
       {/* ── Footer ── */}
       <footer className="border-t border-slate-100 mt-8 py-6">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between text-xs text-slate-400 font-medium">
-          <Logo size="sm" variant="light" />
+          <Logo size="sm" />
           <div className="flex items-center gap-4">
             <span>Paiement sécurisé</span>
             <span className="text-slate-200">·</span>

@@ -1,4 +1,4 @@
-export type VariantType = 'COULEUR' | 'TAILLE' | 'POINTURE';
+export type VariantType = 'COULEUR' | 'TAILLE' | 'POINTURE' | 'PLAT' | 'PIECE';
 
 export interface ProductVariant {
   id: number;

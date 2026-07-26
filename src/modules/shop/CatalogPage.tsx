@@ -17,6 +17,8 @@ const VARIANT_LABELS: Record<VariantType, string> = {
   COULEUR: 'Couleur',
   TAILLE: 'Taille',
   POINTURE: 'Pointure',
+  PLAT: 'Plat',
+  PIECE: 'Pièce',
 };
 
 // ─── QuantitySheet ────────────────────────────────────────────────────────────
@@ -147,10 +149,10 @@ function QuantitySheet({
                             }}
                             className={`min-w-[48px] h-10 px-3 rounded-xl text-sm font-semibold border transition-all ${
                               active
-                                ? 'bg-[#0066FF] text-white border-[#0066FF]'
+                                ? 'bg-[#C9A84C] text-white border-[#C9A84C]'
                                 : disabled
                                 ? 'text-slate-300 border-slate-100 line-through'
-                                : 'text-slate-700 border-slate-200 hover:border-[#0066FF]/40'
+                                : 'text-slate-700 border-slate-200 hover:border-[#C9A84C]/40'
                             }`}
                           >
                             {v.value}
@@ -180,7 +182,7 @@ function QuantitySheet({
                 <button
                   onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
                   disabled={qty >= maxQty}
-                  className="h-9 w-9 rounded-full bg-[#0066FF] flex items-center justify-center text-white disabled:opacity-30 hover:bg-[#0052CC] transition-colors"
+                  className="h-9 w-9 rounded-full bg-[#C9A84C] flex items-center justify-center text-white disabled:opacity-30 hover:bg-[#B8903A] transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -357,7 +359,7 @@ export function CatalogPage() {
               La boutique s'ouvrira dès que la vendeuse démarre son live.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-ink/35 font-medium bg-cream-50 border border-cream-200 rounded-full px-4 py-2">
+          <div className="flex items-center gap-2 text-xs text-ink/35 font-medium bg-cream-50 border border-cream-200 rounded-full px-5 sm:px-6 sm:px-6 py-2">
             <Loader2 className="h-3 w-3 animate-spin" />
             Vérification automatique toutes les 30s…
           </div>
@@ -405,7 +407,7 @@ export function CatalogPage() {
               <div
                 key={i}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === selectedIdx ? 'w-5 bg-[#0066FF]' : 'w-1.5 bg-slate-200'
+                  i === selectedIdx ? 'w-5 bg-[#C9A84C]' : 'w-1.5 bg-slate-200'
                 }`}
               />
             ))}

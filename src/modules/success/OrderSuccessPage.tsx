@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Check, Phone, Truck, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 import { useCart } from '@/stores/cart.store';
 
@@ -28,7 +28,7 @@ export function OrderSuccessPage() {
           transition={{ type: 'spring', stiffness: 280, damping: 22 }}
           className="relative mb-8"
         >
-          <div className="h-24 w-24 rounded-full bg-[#0066FF] flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <div className="h-24 w-24 rounded-full bg-[#C9A84C] flex items-center justify-center shadow-lg shadow-blue-500/30">
             <Check className="h-12 w-12 text-white" strokeWidth={2.5} />
           </div>
           <motion.div
@@ -69,7 +69,7 @@ export function OrderSuccessPage() {
           className="w-full max-w-xs bg-slate-50 border border-slate-100 rounded-3xl p-6 flex flex-col items-center gap-3"
         >
           <div className="h-14 w-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center">
-            <Truck className="h-7 w-7 text-[#0066FF]" />
+            <Truck className="h-7 w-7 text-[#C9A84C]" />
           </div>
           <div>
             <div className="font-display text-2xl font-medium text-slate-900 tracking-tight">Livré en 24h</div>
