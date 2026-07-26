@@ -173,7 +173,7 @@ export function CheckoutPage() {
                   <div className="text-sm font-extrabold text-slate-900 tabular-nums">
                     {formatCfa(i.priceCfa * i.quantity)}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 h-7 rounded-full bg-slate-100 border border-slate-200 px-1.5">
                     {/* Minus — devient poubelle à qty=1 */}
                     <button
                       onClick={() =>
@@ -182,24 +182,33 @@ export function CheckoutPage() {
                           : updateQty(i.productId, i.variantId, i.quantity - 1)
                       }
                       disabled={mutation.isPending}
-                      className="h-7 w-7 rounded-full border border-slate-200 bg-white flex items-center justify-center transition-all active:scale-90 hover:bg-slate-100 disabled:opacity-40"
+                      className="h-5 w-5 rounded-full bg-white flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200 disabled:opacity-40"
                       aria-label="Réduire la quantité"
                     >
                       {i.quantity <= 1
                         ? <Trash2 className="h-3 w-3 text-red-400" />
-                        : <Minus className="h-3 w-3 text-slate-500" />
+                        : <Minus className="h-2.5 w-2.5 text-slate-500" />
                       }
                     </button>
 
-                    <span className="text-sm font-bold text-slate-900 w-5 text-center tabular-nums select-none">
-                      {i.quantity}
-                    </span>
+                    <input
+                      type="number"
+                      value={i.quantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        updateQty(i.productId, i.variantId, Math.max(1, Math.min(stock, val)));
+                      }}
+                      min="1"
+                      max={stock}
+                      disabled={mutation.isPending}
+                      className="w-8 h-full bg-transparent text-center text-xs font-bold text-slate-900 outline-none tabular-nums disabled:opacity-40"
+                    />
 
                     {/* Plus — désactivé si stock atteint */}
                     <button
                       onClick={() => updateQty(i.productId, i.variantId, i.quantity + 1)}
                       disabled={i.quantity >= stock || mutation.isPending}
-                      className="h-7 w-7 rounded-full border border-slate-200 bg-white flex items-center justify-center transition-all active:scale-90 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="h-5 w-5 rounded-full bg-white flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
                       aria-label="Augmenter la quantité"
                     >
                       <Plus className="h-3 w-3 text-slate-500" />
