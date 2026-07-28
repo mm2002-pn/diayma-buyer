@@ -1,34 +1,34 @@
+import React from 'react';
+
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-const DiayemaIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <path
-      d="M8 6C8 4.89543 8.89543 4 10 4H18C23.5228 4 28 8.47715 28 14V18C28 23.5228 23.5228 28 18 28H10C8.89543 28 8 27.1046 8 26V6Z"
-      fill="currentColor"
-    />
-    <path d="M14 11.5L21 16L14 20.5V11.5Z" fill="#C9A84C" />
-  </svg>
-);
-
-export function Logo({ size = 'md', className = '' }: LogoProps) {
+export const Logo: React.FC<LogoProps> = ({ size = 'md', className = '' }) => {
   const dims = {
-    sm: { box: 'w-8 h-8 rounded-lg',  icon: 'w-4 h-4' },
-    md: { box: 'w-10 h-10 rounded-xl', icon: 'w-5 h-5' },
-    lg: { box: 'w-12 h-12 rounded-2xl',icon: 'w-6 h-6' },
+    sm: 32,
+    md: 40,
+    lg: 48,
   };
-
   const d = dims[size];
 
   return (
-    <div className={`inline-flex items-center select-none group ${className}`}>
-      <div className={`${d.box} bg-[#C9A84C] flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105`}>
-        <DiayemaIcon className={`${d.icon} text-white`} />
-      </div>
-    </div>
+    <svg width={d} height={d} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 transition-transform duration-200 hover:scale-105 ${className}`}>
+      <defs>
+        <linearGradient id="gold-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#D4B060" />
+          <stop offset="60%" stopColor="#C9A84C" />
+          <stop offset="100%" stopColor="#A8862A" />
+        </linearGradient>
+        <linearGradient id="d-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2D1A08" />
+          <stop offset="100%" stopColor="#1A0F04" />
+        </linearGradient>
+      </defs>
+      <rect width="40" height="40" rx="10" fill="url(#gold-bg)" />
+      <rect x="2" y="2" width="36" height="18" rx="8" fill="white" fillOpacity="0.08" />
+      <text x="20" y="29" textAnchor="middle" fontFamily="'Plus Jakarta Sans', Arial Black, sans-serif" fontWeight="900" fontSize="26" fill="url(#d-fill)" letterSpacing="-1">D</text>
+    </svg>
   );
-}
-
-export { DiayemaIcon };
+};

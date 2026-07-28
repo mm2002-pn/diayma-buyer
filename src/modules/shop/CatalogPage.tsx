@@ -355,7 +355,7 @@ export function CatalogPage() {
   if (!liveActive) {
     return (
       <div className="flex-1 flex flex-col bg-white">
-        <ShopHeader seller={seller} liveActive={false} />
+        <ShopHeader seller={seller} liveActive={false} saleSlug={saleSlug} />
         <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
           <div className="h-20 w-20 rounded-3xl bg-cream-100 flex items-center justify-center border border-cream-200">
             <Radio className="h-8 w-8 text-ink/25" />
@@ -397,7 +397,7 @@ export function CatalogPage() {
   // ── Mobile : photo pleine hauteur + Commander ──
   return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden">
-      <ShopHeader seller={seller} liveActive={liveActive} />
+      <ShopHeader seller={seller} liveActive={liveActive} saleSlug={saleSlug} />
 
       {/* Zone photos — flex-1 pour prendre toute la hauteur disponible */}
       <div className="flex-1 flex flex-col min-h-0 pt-3 pb-4">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, ImageOff, MapPin, Radio, Sparkles, ShoppingCart, Package, Clock, CreditCard } from 'lucide-react';
+import { ShoppingBag, ImageOff, MapPin, Radio, Sparkles, ShoppingCart, Package, Clock, CreditCard, Truck, Plus, Minus, Share2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 import { formatCfa } from '@/lib/utils';
@@ -29,6 +29,7 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
   const add = useCart((s) => s.add);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [added, setAdded] = useState(false);
+  const [qty, setQty] = useState(1);
 
   const variantsByType = useMemo(() => {
     const map = new Map<VariantType, ProductVariant[]>();
@@ -55,6 +56,10 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
     ? types.some((t) => (selectedByType.get(t)?.stock ?? 0) === 0)
     : p.stock === 0;
 
+  const maxQty = hasVariants
+    ? Math.min(...types.map((t) => selectedByType.get(t)?.stock ?? 0))
+    : p.stock;
+
   const primaryVariant = types.length > 0 ? selectedByType.get(types[0]) ?? null : null;
   const variantLabel = types.map((t) => selectedByType.get(t)?.value).filter(Boolean).join(' · ');
 
@@ -69,8 +74,10 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
       priceCfa: p.priceCfa,
       sellerId: p.sellerId,
       saleSlug,
+      quantity: qty,
     });
     setAdded(true);
+    setQty(1);
     setTimeout(() => setAdded(false), 2000);
   }
 
@@ -163,6 +170,41 @@ function ProductCard({ p, saleSlug }: { p: Product; saleSlug: string }) {
 
         <div className="flex-1" />
 
+        {/* Quantity selector */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs font-semibold text-slate-500">Qté :</span>
+          <div className="flex items-center gap-1 h-8 rounded-lg bg-slate-100 border border-slate-200 px-2">
+            <button
+              onClick={() => setQty(Math.max(1, qty - 1))}
+              disabled={qty <= 1 || isOutOfStock}
+              className="p-1 rounded transition-all active:scale-90 hover:bg-slate-200 disabled:opacity-40"
+              aria-label="Réduire"
+            >
+              <Minus className="h-3 w-3 text-slate-500" />
+            </button>
+            <input
+              type="number"
+              value={qty}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 1;
+                setQty(Math.max(1, Math.min(maxQty, val)));
+              }}
+              min="1"
+              max={maxQty}
+              disabled={isOutOfStock}
+              className="w-12 h-full bg-transparent text-center text-sm font-bold text-slate-900 outline-none tabular-nums disabled:opacity-40"
+            />
+            <button
+              onClick={() => setQty(Math.min(maxQty, qty + 1))}
+              disabled={qty >= maxQty || isOutOfStock}
+              className="p-1 rounded transition-all active:scale-90 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Augmenter"
+            >
+              <Plus className="h-3 w-3 text-slate-500" />
+            </button>
+          </div>
+        </div>
+
         {added ? (
           <button disabled className="w-full h-10 rounded-xl bg-emerald-500 text-white font-semibold text-sm">
             ✓ Ajouté
@@ -238,7 +280,21 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
             )}
           </div>
 
-          {/* Cart */}
+          {/* Share & Cart */}
+          <div className="flex items-center gap-2">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                `Viens découvrir ${seller.shopName ?? seller.name} sur Diayema!\nhttps://buyer.diayema.com/s/${saleSlug}`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center h-10 w-10 rounded-full hover:bg-emerald-50 text-slate-400 hover:text-[#25D366] transition-colors"
+              title="Partager sur WhatsApp"
+            >
+              <Share2 className="h-5 w-5" />
+            </a>
+          </div>
+
           <button
             disabled={cartTotalQty === 0}
             onClick={() => navigate(`/s/${saleSlug}/checkout`, { state: { liveId: activeLiveId ?? null } })}
@@ -332,16 +388,18 @@ export function CatalogDesktop({ seller, products, saleSlug, liveActive, activeL
 
             {/* Trust signals */}
             <div className="px-4 py-4 border-t border-slate-100 space-y-2.5">
-              {[
-                { emoji: '🌊', text: 'Wave Money' },
-                { emoji: '🟠', text: 'Orange Money' },
-                { emoji: '🚚', text: 'À la livraison' },
-              ].map((p) => (
-                <div key={p.text} className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                  <span>{p.emoji}</span>
-                  <span>{p.text}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                <img src="/logo-wave.webp" alt="Wave" className="h-5 w-5 rounded" />
+                <span>Wave Money</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                <img src="/logo-orange-money.png" alt="Orange Money" className="h-5 w-5 rounded" />
+                <span>Orange Money</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                <Truck className="h-5 w-5 text-slate-400" />
+                <span>À la livraison</span>
+              </div>
             </div>
           </div>
         </aside>

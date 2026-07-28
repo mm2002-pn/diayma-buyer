@@ -115,7 +115,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white overflow-y-auto md:max-w-lg md:mx-auto md:w-full">
+    <div className="flex-1 flex flex-col bg-white overflow-y-auto w-full">
       {/* Header */}
       <div className="flex items-center bg-white/95 border-b border-slate-100 px-4 pt-3 pb-3 flex-shrink-0 sticky top-0 z-10 backdrop-blur-sm">
         <button
@@ -127,13 +127,13 @@ export function CheckoutPage() {
         </button>
         <div className="flex-1 flex justify-center">
           <span className="font-extrabold text-base text-slate-900 tracking-tight">
-            Diayma<span className="text-[#C9A84C]">.</span>
+            Diayema<span className="text-[#C9A84C]">.</span>
           </span>
         </div>
         <div className="w-9" />
       </div>
 
-      <div className="flex-1 px-4 py-6 md:py-8 space-y-5">
+      <div className="flex-1 px-4 py-6 md:py-8 space-y-5 w-full max-w-6xl mx-auto md:px-6 lg:px-8">
         {/* Items */}
         <div className="space-y-2">
           {items.map((i) => {
@@ -264,45 +264,47 @@ export function CheckoutPage() {
             Choisir le paiement
           </div>
 
-          {/* Online */}
-          <button
-            disabled={mutation.isPending || hasStockIssue}
-            onClick={() => onPay('WAVE')}
-            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-[#C9A84C] text-white shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
-          >
-            {/* Logos Wave + Orange Money */}
-            <span className="flex items-center gap-1.5 flex-shrink-0">
-              {/* Wave */}
-              <img src="/logo-wave.webp" alt="Wave" className="h-8 w-8 rounded-lg shadow-sm" />
-              {/* Orange Money */}
-              <img src="/logo-orange-money.png" alt="Orange Money" className="h-8 w-8 rounded-lg shadow-sm" />
-            </span>
-            <div className="text-left">
-              <div className="text-sm font-bold">Payer en ligne</div>
-              <div className="text-xs text-white/60 font-normal">Wave · Orange Money</div>
-            </div>
-            {pendingMethod === 'WAVE' && (
-              <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
-            )}
-          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Online */}
+            <button
+              disabled={mutation.isPending || hasStockIssue}
+              onClick={() => onPay('WAVE')}
+              className={`h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-[#C9A84C] text-white shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'WAVE' ? 'opacity-40' : ''}`}
+            >
+              {/* Logos Wave + Orange Money */}
+              <span className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Wave */}
+                <img src="/logo-wave.webp" alt="Wave" className="h-8 w-8 rounded-lg shadow-sm" />
+                {/* Orange Money */}
+                <img src="/logo-orange-money.png" alt="Orange Money" className="h-8 w-8 rounded-lg shadow-sm" />
+              </span>
+              <div className="text-left">
+                <div className="text-sm font-bold">Payer en ligne</div>
+                <div className="text-xs text-white/60 font-normal">Wave · Orange Money</div>
+              </div>
+              {pendingMethod === 'WAVE' && (
+                <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-70" />
+              )}
+            </button>
 
-          {/* COD */}
-          <button
-            disabled={mutation.isPending || hasStockIssue}
-            onClick={() => onPay('COD')}
-            className={`w-full h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-white text-slate-800 border-2 border-slate-200 shadow-soft active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'COD' ? 'opacity-40' : ''}`}
-          >
-            <span className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-              <Truck className="h-5 w-5 text-slate-500" />
-            </span>
-            <div className="text-left">
-              <div className="text-sm font-bold">À la livraison</div>
-              <div className="text-xs text-slate-400 font-normal">Paye à réception</div>
-            </div>
-            {pendingMethod === 'COD' && (
-              <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-50 text-slate-500" />
-            )}
-          </button>
+            {/* COD */}
+            <button
+              disabled={mutation.isPending || hasStockIssue}
+              onClick={() => onPay('COD')}
+              className={`h-14 rounded-2xl text-base font-semibold flex items-center gap-3.5 px-5 bg-white text-slate-800 border-2 border-slate-200 shadow-soft active:scale-[0.98] transition-all ${mutation.isPending && pendingMethod !== 'COD' ? 'opacity-40' : ''}`}
+            >
+              <span className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <Truck className="h-5 w-5 text-slate-500" />
+              </span>
+              <div className="text-left">
+                <div className="text-sm font-bold">À la livraison</div>
+                <div className="text-xs text-slate-400 font-normal">Paye à réception</div>
+              </div>
+              {pendingMethod === 'COD' && (
+                <Loader2 className="ml-auto h-5 w-5 animate-spin opacity-50 text-slate-500" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Error */}
