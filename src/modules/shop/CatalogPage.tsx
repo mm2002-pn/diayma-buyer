@@ -1,279 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
-import useEmblaCarousel from 'embla-carousel-react';
-import { ShoppingCart, Loader2, ImageOff, Radio, X, Minus, Plus } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { ImageOff, Loader2, PackageOpen, RotateCw } from 'lucide-react';
 
-import { ShopHeader } from '@/components/ShopHeader';
 import { shopApi } from './shop.api';
-import { useCart } from '@/stores/cart.store';
-import { formatCfa } from '@/lib/utils';
-import { useIsDesktop } from '@/lib/useIsDesktop';
-import { CatalogDesktop } from './CatalogDesktop';
-import type { Product, ProductVariant, VariantType } from '@/types/api';
+import { StoryCatalogue } from './StoryCatalogue';
 import { useShopSocket } from '@/hooks/useShopSocket';
 
-const VARIANT_LABELS: Record<VariantType, string> = {
-  COULEUR: 'Couleur',
-  TAILLE: 'Taille',
-  POINTURE: 'Pointure',
-  PLAT: 'Plat',
-  PIECE: 'Pièce',
-};
-
-// ─── QuantitySheet ────────────────────────────────────────────────────────────
-function QuantitySheet({
-  product,
-  saleSlug,
-  onClose,
-}: {
-  product: Product;
-  saleSlug: string;
-  onClose: () => void;
-}) {
-  const add = useCart((s) => s.add);
-  const [qty, setQty] = useState(1);
-  const [added, setAdded] = useState(false);
-
-  const variantsByType = useMemo(() => {
-    const map = new Map<VariantType, ProductVariant[]>();
-    for (const v of product.variants) {
-      if (!map.has(v.type)) map.set(v.type, []);
-      map.get(v.type)!.push(v);
-    }
-    return map;
-  }, [product.variants]);
-
-  const types = Array.from(variantsByType.keys());
-  const hasVariants = types.length > 0;
-
-  const [selectedByType, setSelectedByType] = useState<Map<VariantType, ProductVariant>>(() => {
-    const init = new Map<VariantType, ProductVariant>();
-    for (const [type, variants] of variantsByType) {
-      const first = variants.find((v) => v.stock > 0) ?? variants[0];
-      if (first) init.set(type, first);
-    }
-    return init;
-  });
-
-  const isOutOfStock = hasVariants
-    ? types.some((t) => (selectedByType.get(t)?.stock ?? 0) === 0)
-    : product.stock === 0;
-
-  const maxQty = hasVariants
-    ? Math.min(...types.map((t) => selectedByType.get(t)?.stock ?? 0))
-    : product.stock;
-
-  const primaryVariant = types.length > 0 ? selectedByType.get(types[0]) ?? null : null;
-  const variantLabel = types.map((t) => selectedByType.get(t)?.value).filter(Boolean).join(' · ');
-
-  function handleAjouter() {
-    if (isOutOfStock || added) return;
-    add({
-      productId: product.id,
-      variantId: primaryVariant?.id ?? null,
-      variantLabel: variantLabel || null,
-      productName: product.name,
-      photoUrl: product.photoUrl,
-      priceCfa: product.priceCfa,
-      sellerId: product.sellerId,
-      saleSlug,
-      quantity: qty,
-    });
-    setAdded(true);
-    setTimeout(() => { onClose(); }, 900);
-  }
-
-  return (
-    <>
-      {/* Backdrop — onPointerDown évite que le même tap qui ouvre le drawer le referme */}
-      <div className="fixed inset-0 z-40 bg-black/50" onPointerDown={(e) => { e.preventDefault(); onClose(); }} />
-
-      {/* Sheet */}
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl shadow-2xl">
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-ink/15" />
-        </div>
-
-        <div className="px-5 pt-3 pb-8 space-y-5">
-          {/* Produit */}
-          <div className="flex items-center gap-3">
-            {product.photoUrl ? (
-              <img
-                src={product.photoUrl}
-                alt={product.name ?? ''}
-                className="h-16 w-16 rounded-2xl object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="h-16 w-16 rounded-2xl bg-cream-100 flex-shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              {product.name && (
-                <div className="font-semibold text-slate-800 text-base leading-tight">{product.name}</div>
-              )}
-              <div className="text-xl font-bold text-slate-900 mt-0.5">
-                {product.priceCfa.toLocaleString('fr-FR')}{' '}
-                <span className="text-sm font-semibold text-slate-500">F CFA</span>
-              </div>
-            </div>
-            <button onClick={onClose} className="p-1.5 text-slate-300 hover:text-slate-500 rounded-lg hover:bg-slate-50 transition-colors flex-shrink-0">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* Variantes */}
-          {hasVariants && (
-            <div className="space-y-3">
-              {types.map((type) => {
-                const variants = variantsByType.get(type)!;
-                const selected = selectedByType.get(type);
-                return (
-                  <div key={type}>
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                      {VARIANT_LABELS[type]}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {variants.map((v) => {
-                        const active = selected?.id === v.id;
-                        const disabled = v.stock === 0;
-                        return (
-                          <button
-                            key={v.id}
-                            disabled={disabled}
-                            onClick={() => {
-                              const next = new Map(selectedByType);
-                              next.set(type, v);
-                              setSelectedByType(next);
-                              setQty(1);
-                            }}
-                            className={`min-w-[48px] h-10 px-3 rounded-xl text-sm font-semibold border transition-all ${
-                              active
-                                ? 'bg-[#C9A84C] text-white border-[#C9A84C]'
-                                : disabled
-                                ? 'text-slate-300 border-slate-100 line-through'
-                                : 'text-slate-700 border-slate-200 hover:border-[#C9A84C]/40'
-                            }`}
-                          >
-                            {v.value}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Quantité */}
-          {!isOutOfStock && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-500">Quantité</span>
-              <div className="flex items-center gap-2 h-10 rounded-full bg-slate-50 border border-slate-200 px-3">
-                <button
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  disabled={qty <= 1}
-                  className="h-7 w-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 disabled:opacity-30 hover:bg-slate-300 transition-colors"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <input
-                  type="number"
-                  value={qty}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1;
-                    setQty(Math.max(1, Math.min(maxQty, val)));
-                  }}
-                  min="1"
-                  max={maxQty}
-                  className="w-12 h-full bg-transparent text-center font-bold text-slate-900 outline-none"
-                />
-                <button
-                  onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
-                  disabled={qty >= maxQty}
-                  className="h-7 w-7 rounded-full bg-[#C9A84C] flex items-center justify-center text-white disabled:opacity-30 hover:bg-[#B8903A] transition-colors"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* CTA */}
-          {isOutOfStock ? (
-            <button disabled className="btn-primary opacity-30">
-              Rupture de stock
-            </button>
-          ) : added ? (
-            <button disabled className="w-full h-14 rounded-full bg-emerald-600 text-white font-semibold text-base flex items-center justify-center gap-2">
-              ✓ Ajouté · {formatCfa(product.priceCfa * qty)}
-            </button>
-          ) : (
-            <button className="btn-primary" onClick={handleAjouter}>
-              <ShoppingCart className="h-5 w-5" />
-              Ajouter · {formatCfa(product.priceCfa * qty)}
-            </button>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── Photo slide (card cliquable) ────────────────────────────────────────────
-function PhotoSlide({ p, onSelect }: { p: Product; onSelect: () => void }) {
-  const startPos = useRef<{ x: number; y: number } | null>(null);
-
-  return (
-    <div className="flex-[0_0_100%] min-w-0 h-full px-4">
-      <div
-        className="h-full rounded-3xl overflow-hidden relative bg-cream-100 cursor-pointer"
-        onPointerDown={(e) => { startPos.current = { x: e.clientX, y: e.clientY }; }}
-        onPointerUp={(e) => {
-          if (!startPos.current) return;
-          const dx = Math.abs(e.clientX - startPos.current.x);
-          const dy = Math.abs(e.clientY - startPos.current.y);
-          if (dx < 8 && dy < 8) onSelect();
-          startPos.current = null;
-        }}
-      >
-        {p.photoUrl ? (
-          <img src={p.photoUrl} alt={p.name ?? ''} className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full flex items-center justify-center text-ink/20">
-            <ImageOff className="h-16 w-16" />
-          </div>
-        )}
-        {/* Gradient + prix */}
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-5 left-5">
-          <span className="text-4xl font-bold text-white leading-none">
-            {p.priceCfa.toLocaleString('fr-FR')}
-          </span>
-          <span className="text-lg font-semibold text-white/90 ml-2">F CFA</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── CatalogPage ─────────────────────────────────────────────────────────────
 export function CatalogPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
-  const navigate = useNavigate();
-  const isDesktop = useIsDesktop();
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'center' });
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [qtyOpen, setQtyOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [jumpToProductId, setJumpToProductId] = useState<number | null>(null);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['shop', saleSlug],
     queryFn: () => shopApi.bySaleSlug(saleSlug!),
     enabled: !!saleSlug,
   });
 
+  // Le live n'est plus une condition d'accès (décision D2) : il enrichit
+  // seulement l'affichage (badge Live, rattachement de la commande au live).
   const livesQuery = useQuery({
     queryKey: ['active-lives'],
     queryFn: shopApi.activeLives,
@@ -284,180 +29,75 @@ export function CatalogPage() {
     saleSlug,
     () => { void livesQuery.refetch(); },
     () => { void livesQuery.refetch(); },
-    (featuredProductId) => {
-      setProducts((prev) => {
-        if (!featuredProductId) return prev;
-        const idx = prev.findIndex((p) => p.id === featuredProductId);
-        if (idx <= 0) return prev;
-        const next = [...prev];
-        const [featured] = next.splice(idx, 1);
-        next.unshift(featured);
-        emblaApi?.scrollTo(0, false);
-        setSelectedIdx(0);
-        return next;
-      });
-    },
+    (featuredProductId) => { setJumpToProductId(featuredProductId); },
   );
 
-  useEffect(() => {
-    if (data?.products) setProducts(data.products);
-  }, [data?.products]);
-
-  const allCartItems = useCart((s) => s.items);
-  const { cartTotalQty, cartTotalCfa } = useMemo(() => {
-    const items = saleSlug ? allCartItems.filter((i) => i.saleSlug === saleSlug) : [];
-    return {
-      cartTotalQty: items.reduce((a, i) => a + i.quantity, 0),
-      cartTotalCfa: items.reduce((a, i) => a + i.priceCfa * i.quantity, 0),
-    };
-  }, [allCartItems, saleSlug]);
-
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIdx(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    emblaApi.on('select', onSelect);
-    return () => { emblaApi.off('select', onSelect); };
-  }, [emblaApi, onSelect]);
-
-  if (isLoading || livesQuery.isLoading) {
+  if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4">
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center gap-4">
         <div className="h-10 w-10 rounded-xl bg-forest flex items-center justify-center">
           <span className="font-display text-cream text-lg font-bold">D</span>
         </div>
-        <Loader2 className="h-5 w-5 animate-spin text-forest/50" />
-      </div>
-    );
-  }
-  if (error || !data) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-3">
-        <div className="h-14 w-14 rounded-2xl bg-clay/10 flex items-center justify-center">
-          <ImageOff className="h-6 w-6 text-clay/50" />
-        </div>
-        <div className="text-ink text-base font-semibold">Boutique introuvable</div>
-        <div className="text-ink/45 text-sm">Vérifie le lien avec la vendeuse.</div>
+        <Loader2 className="h-5 w-5 animate-spin text-white/40" />
       </div>
     );
   }
 
-  const { seller } = data;
+  if (error || !data) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-6 text-center gap-3">
+        <div className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center">
+          <ImageOff className="h-6 w-6 text-white/30" />
+        </div>
+        <div className="text-white text-base font-semibold">Boutique introuvable</div>
+        <div className="text-white/45 text-sm max-w-xs">
+          Vérifie le lien avec la vendeuse, ou réessaie si ta connexion est instable.
+        </div>
+        <button
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          className="mt-3 h-11 px-6 rounded-full bg-white/12 text-white text-sm font-semibold flex items-center gap-2 hover:bg-white/20 disabled:opacity-40 transition-colors"
+        >
+          <RotateCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
+  const { seller, products, featuredProductId } = data;
+
+  if (products.length === 0) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center gap-4">
+        <div className="h-16 w-16 rounded-2xl bg-white/5 flex items-center justify-center">
+          <PackageOpen className="h-7 w-7 text-white/30" />
+        </div>
+        <div>
+          <div className="font-display text-2xl font-medium text-white mb-1.5 tracking-tight">
+            {seller.shopName ?? seller.name}
+          </div>
+          <p className="text-white/50 text-sm leading-relaxed">
+            Cette boutique n'a pas encore de produit.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const activeLive = (livesQuery.data ?? []).find(
     (l) => l.sellerId === seller.id && l.status === 'LIVE',
   );
-  const liveActive = !!activeLive;
 
-  // Écran d'attente si pas de live
-  if (!liveActive) {
-    return (
-      <div className="flex-1 flex flex-col bg-white">
-        <ShopHeader seller={seller} liveActive={false} saleSlug={saleSlug} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
-          <div className="h-20 w-20 rounded-3xl bg-cream-100 flex items-center justify-center border border-cream-200">
-            <Radio className="h-8 w-8 text-ink/25" />
-          </div>
-          <div>
-            <div className="font-display text-2xl font-medium text-ink mb-2 tracking-tight">
-              {seller.shopName ?? seller.name}
-            </div>
-            <p className="text-ink/55 text-base leading-relaxed">Pas de live en cours pour l'instant.</p>
-            <p className="text-ink/35 text-sm mt-1.5">
-              La boutique s'ouvrira dès que la vendeuse démarre son live.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-ink/35 font-medium bg-cream-50 border border-cream-200 rounded-full px-5 sm:px-6 sm:px-6 py-2">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Vérification automatique toutes les 30s…
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isDesktop) {
-    return (
-      <CatalogDesktop
-        seller={seller}
-        products={products}
-        saleSlug={saleSlug!}
-        liveActive={liveActive}
-        activeLiveId={activeLive?.id ?? null}
-        cartTotalQty={cartTotalQty}
-        cartTotalCfa={cartTotalCfa}
-      />
-    );
-  }
-
-  const currentProduct = products[selectedIdx] ?? products[0];
-
-  // ── Mobile : photo pleine hauteur + Commander ──
   return (
-    <div className="flex-1 flex flex-col bg-white overflow-hidden">
-      <ShopHeader seller={seller} liveActive={liveActive} saleSlug={saleSlug} />
-
-      {/* Zone photos — flex-1 pour prendre toute la hauteur disponible */}
-      <div className="flex-1 flex flex-col min-h-0 pt-3 pb-4">
-        {/* Carousel */}
-        <div className="flex-1 min-h-0 overflow-hidden" ref={emblaRef}>
-          <div className="flex h-full">
-            {products.map((p, i) => (
-              <PhotoSlide key={p.id} p={p} onSelect={() => { setSelectedIdx(i); setQtyOpen(true); }} />
-            ))}
-          </div>
-        </div>
-
-        {/* Dots */}
-        {products.length > 1 && (
-          <div className="flex justify-center gap-1.5 pt-3 pb-1">
-            {products.map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === selectedIdx ? 'w-5 bg-[#C9A84C]' : 'w-1.5 bg-slate-200'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Bouton Commander */}
-        <div className="px-4 pt-3">
-          {cartTotalQty > 0 ? (
-            <button
-              className="btn-primary"
-              onClick={() => navigate(`/s/${saleSlug}/checkout`, { state: { liveId: activeLive?.id ?? null } })}
-            >
-              <ShoppingCart className="h-5 w-5" />
-              <span>Commander</span>
-              <span className="ml-1 font-normal opacity-80">· {formatCfa(cartTotalCfa)}</span>
-              <span className="ml-2 bg-white/25 rounded-full px-2 py-0.5 text-xs font-bold">
-                {cartTotalQty}
-              </span>
-            </button>
-          ) : (
-            <button
-              className="btn-primary"
-              onClick={() => setQtyOpen(true)}
-            >
-              <ShoppingCart className="h-5 w-5" />
-              Commander
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom sheet quantité */}
-      {qtyOpen && currentProduct && (
-        <QuantitySheet
-          product={currentProduct}
-          saleSlug={saleSlug!}
-          onClose={() => setQtyOpen(false)}
-        />
-      )}
-    </div>
+    <StoryCatalogue
+      seller={seller}
+      products={products}
+      saleSlug={saleSlug!}
+      liveActive={!!activeLive}
+      activeLiveId={activeLive?.id ?? null}
+      initialProductId={featuredProductId}
+      jumpToProductId={jumpToProductId}
+    />
   );
 }
