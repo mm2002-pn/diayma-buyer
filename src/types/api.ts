@@ -24,6 +24,12 @@ export interface Product {
   name: string | null;
   priceCfa: number;
   photoUrl: string | null;
+  /**
+   * Photos additionnelles du produit (faces, angles, détails), utilisées par la
+   * vue story. Champ optionnel : tant que l'API ne le renvoie pas, la vue se
+   * replie sur `photoUrl` et n'affiche qu'un seul segment de progression.
+   */
+  photoUrls?: string[] | null;
   stock: number;
   status: 'ACTIVE' | 'ARCHIVED';
   variants: ProductVariant[];
