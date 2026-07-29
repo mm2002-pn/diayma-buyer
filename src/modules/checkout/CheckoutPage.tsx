@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ShieldCheck, Loader2, Trash2, Truck, Minus, Plus } from 'lucide-react';
 
 import { useCart } from '@/stores/cart.store';
-import { checkoutApi, type CreateOrderResponse } from './checkout.api';
+import { checkoutApi, callPay2Up, type CreateOrderResponse } from './checkout.api';
 import { shopApi } from '@/modules/shop/shop.api';
 import { extractError } from '@/lib/api';
 import { formatCfa } from '@/lib/utils';
@@ -70,8 +70,16 @@ export function CheckoutPage() {
 
   const mutation = useMutation({
     mutationFn: checkoutApi.createOrder,
-    onSuccess: (data: CreateOrderResponse) => {
-      if (data.checkoutUrl) {
+    onSuccess: async (data: CreateOrderResponse) => {
+      if (data.paymentInfo) {
+        try {
+          const checkoutUrl = await callPay2Up(data.paymentInfo);
+          window.location.href = checkoutUrl;
+        } catch {
+          setPendingMethod(null);
+          setError('Le service de paiement est indisponible. Veuillez réessayer.');
+        }
+      } else if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
         clear();
