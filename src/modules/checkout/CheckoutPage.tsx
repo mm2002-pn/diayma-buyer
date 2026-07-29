@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useMemo, useState, useEffect } from 'react';
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ShieldCheck, Loader2, Trash2, Truck, Minus, Plus } from 'lucide-react';
 
@@ -16,6 +16,7 @@ export function CheckoutPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
   const navigate = useNavigate();
   const { state } = useLocation();
+  const [searchParams] = useSearchParams();
   const liveId: number | null = (state as { liveId?: number | null })?.liveId ?? null;
 
   const allItems = useCart((s) => s.items);
@@ -59,6 +60,12 @@ export function CheckoutPage() {
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'payment_failed') {
+      setError('Le paiement a échoué ou a été annulé. Veuillez réessayer.');
+    }
+  }, [searchParams]);
   const [pendingMethod, setPendingMethod] = useState<PaymentMethod | null>(null);
 
   const mutation = useMutation({
