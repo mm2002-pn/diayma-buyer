@@ -8,6 +8,7 @@ import { checkoutApi, type CreateOrderResponse } from './checkout.api';
 import { shopApi } from '@/modules/shop/shop.api';
 import { extractError } from '@/lib/api';
 import { formatCfa } from '@/lib/utils';
+import { rememberShop } from '@/lib/lastShop';
 import type { PaymentMethod } from '@/types/api';
 
 const PHONE_RE = /^[0-9]{9}$/;
@@ -20,9 +21,15 @@ export function CheckoutPage() {
   const liveId: number | null = (state as { liveId?: number | null })?.liveId ?? null;
 
   const allItems = useCart((s) => s.items);
-  const clear = useCart((s) => s.clear);
+  const clearFor = useCart((s) => s.clearFor);
   const removeItem = useCart((s) => s.remove);
   const updateQty = useCart((s) => s.updateQty);
+
+  // Mémorisée dès l'arrivée en caisse : le retour de Pay2Up recharge la page
+  // et perd l'état de navigation qui portait la boutique.
+  useEffect(() => {
+    if (saleSlug) rememberShop(saleSlug);
+  }, [saleSlug]);
 
   const items = useMemo(
     () => (saleSlug ? allItems.filter((i) => i.saleSlug === saleSlug) : []),
@@ -74,7 +81,9 @@ export function CheckoutPage() {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        clear();
+        // Seule cette boutique est vidée : le panier est partagé, l'acheteuse
+        // peut avoir mis des articles de côté chez une autre vendeuse.
+        if (saleSlug) clearFor(saleSlug);
         navigate(`/order/success/${data.order.id}`, {
           state: { order: data.order, saleSlug },
         });

@@ -1,22 +1,35 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Check, Phone, Truck, ArrowRight } from 'lucide-react';
+import { Check, Truck, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 import { useCart } from '@/stores/cart.store';
+import { recallShop } from '@/lib/lastShop';
 
 export function OrderSuccessPage() {
   const { id } = useParams<{ id: string }>();
   const orderId = id ? Number(id) : null;
   useOrderSocket(orderId);
   const location = useLocation();
-  const clear = useCart((s) => s.clear);
-
-  useEffect(() => { clear(); }, [clear]);
   const navigate = useNavigate();
+  const clear = useCart((s) => s.clear);
+  const clearFor = useCart((s) => s.clearFor);
+
   const state = (location.state as { saleSlug?: string; buyerFirstName?: string } | null) ?? {};
-  const saleSlug = state.saleSlug;
+  /**
+   * Après un paiement en ligne, Pay2Up renvoie ici par un rechargement complet
+   * de la page : `location.state` est vide. On retombe alors sur la boutique
+   * mémorisée au passage en caisse, sans quoi l'écran serait sans issue.
+   */
+  const saleSlug = state.saleSlug ?? recallShop() ?? undefined;
   const buyerFirstName = state.buyerFirstName;
+
+  // La commande est passée : ce panier n'a plus lieu d'être. Les autres
+  // boutiques ne sont vidées que si l'on ne sait pas d'où vient la commande.
+  useEffect(() => {
+    if (saleSlug) clearFor(saleSlug);
+    else clear();
+  }, [saleSlug, clearFor, clear]);
 
   return (
     <div className="flex-1 flex flex-col bg-white p-6">
@@ -83,15 +96,15 @@ export function OrderSuccessPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="space-y-3 pt-6"
+        className="pt-6"
       >
-        <a href="tel:+221000000000" className="btn-primary">
-          <Phone className="h-5 w-5" />
-          Contacter la vendeuse
-        </a>
+        {/* Pas de bouton « contacter la vendeuse » : le lien boutique est
+            public, on n'y expose pas son numéro — qui est aussi son
+            identifiant de connexion. C'est elle qui rappelle pour la
+            livraison, comme annoncé plus haut. */}
         {saleSlug && (
-          <button className="btn-secondary" onClick={() => navigate(`/s/${saleSlug}`)}>
-            <span>Retour au catalogue</span>
+          <button className="btn-primary" onClick={() => navigate(`/s/${saleSlug}`)}>
+            <span>Continuer mes achats</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         )}
