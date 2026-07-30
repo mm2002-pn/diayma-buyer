@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ImageOff, Loader2, Minus, Pause, Plus, Radio, ShoppingCart } from 'lucide-react';
+import { Check, ChevronUp, ImageOff, Loader2, Minus, Pause, Plus, Radio, ShoppingCart } from 'lucide-react';
 
 import { useCart } from '@/stores/cart.store';
 import { formatCfa } from '@/lib/utils';
 import type { Product, ProductVariant, SellerBrief, VariantType } from '@/types/api';
+import { CartSheet } from './CartSheet';
 
 /** Durée d'affichage d'une photo avant avance automatique. */
 const PHOTO_DURATION_MS = 5_000;
@@ -51,7 +52,10 @@ export function StoryCatalogue({
 }: Props) {
   const navigate = useNavigate();
   const add = useCart((s) => s.add);
+  const updateQty = useCart((s) => s.updateQty);
+  const clearFor = useCart((s) => s.clearFor);
   const allCartItems = useCart((s) => s.items);
+  const [cartOpen, setCartOpen] = useState(false);
 
   // ── Position dans le catalogue ──────────────────────────────────────────────
   const [productIdx, setProductIdx] = useState(() => {
@@ -77,7 +81,9 @@ export function StoryCatalogue({
   /** L'acheteuse a touché aux variantes ou à la quantité : on gèle l'avance pour ce produit. */
   const [interacted, setInteracted] = useState(false);
 
-  const paused = heldPaused || interacted;
+  // Le panier ouvert gèle aussi le défilement : l'écran ne doit pas changer
+  // pendant que l'acheteuse corrige sa commande.
+  const paused = heldPaused || interacted || cartOpen;
   const photoReady = currentPhoto == null || readyUrl === currentPhoto;
   const elapsedRef = useRef(0);
 
@@ -178,6 +184,7 @@ export function StoryCatalogue({
 
   // Navigation clavier (desktop).
   useEffect(() => {
+    if (cartOpen) return; // le panier a ses propres raccourcis (Échap)
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') goToProduct(productIdx - 1);
       else if (e.key === 'ArrowRight') goToProduct(productIdx + 1);
@@ -185,7 +192,7 @@ export function StoryCatalogue({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [goToProduct, nextPhoto, productIdx]);
+  }, [goToProduct, nextPhoto, productIdx, cartOpen]);
 
   // ── Appui : tap court = navigation, appui long = pause ──────────────────────
   const pressTimer = useRef<number | null>(null);
@@ -243,7 +250,6 @@ export function StoryCatalogue({
   const hasVariants = types.length > 0;
 
   const [selectedByType, setSelectedByType] = useState<Map<VariantType, ProductVariant>>(new Map());
-  const [qty, setQty] = useState(1);
 
   // Sélection par défaut : première variante disponible de chaque axe.
   useEffect(() => {
@@ -253,7 +259,6 @@ export function StoryCatalogue({
       if (first) init.set(type, first);
     }
     setSelectedByType(init);
-    setQty(1);
   }, [variantsByType]);
 
   const isOutOfStock = hasVariants
@@ -278,41 +283,56 @@ export function StoryCatalogue({
   const cartCount = cartItems.reduce((a, i) => a + i.quantity, 0);
   const cartTotalCfa = cartItems.reduce((a, i) => a + i.priceCfa * i.quantity, 0);
 
-  /** La sélection courante est-elle déjà au panier ? Évite un double ajout via « Commander ». */
-  const alreadyInCart = cartItems.some(
-    (i) => i.productId === product.id && i.variantId === (primaryVariant?.id ?? null),
-  );
+  /** Ligne du panier correspondant exactement à la sélection courante, s'il y en a une. */
+  const currentVariantId = primaryVariant?.id ?? null;
+  const currentLine =
+    cartItems.find((i) => i.productId === product.id && i.variantId === currentVariantId) ?? null;
 
   const [justAdded, setJustAdded] = useState(false);
   useEffect(() => { setJustAdded(false); }, [productIdx]);
 
-  function addCurrentToCart() {
+  /**
+   * Ajoute un exemplaire. La quantité ne se règle plus *avant* l'ajout : le
+   * bouton se transforme en compteur une fois le produit au panier. L'acheteuse
+   * qui commande à l'unité — le cas courant — n'a qu'un seul geste à comprendre.
+   */
+  function handleAjouter() {
+    if (isOutOfStock) return;
+    setInteracted(true);
     add({
       productId: product.id,
-      variantId: primaryVariant?.id ?? null,
+      variantId: currentVariantId,
       variantLabel: variantLabel || null,
       productName: product.name,
       photoUrl: photos[0] ?? product.photoUrl,
       priceCfa: product.priceCfa,
       sellerId: product.sellerId,
       saleSlug,
-      quantity: qty,
+      quantity: 1,
     });
-  }
-
-  /** Ajoute au panier et reste dans la story, pour composer une commande à plusieurs produits. */
-  function handleAjouter() {
-    if (isOutOfStock) return;
-    setInteracted(true);
-    addCurrentToCart();
     setJustAdded(true);
-    window.setTimeout(() => setJustAdded(false), 1400);
+    window.setTimeout(() => setJustAdded(false), 1200);
   }
 
+  /** Règle la quantité de la ligne courante. À zéro, la ligne sort du panier. */
+  function setCurrentQty(next: number) {
+    setInteracted(true);
+    updateQty(product.id, currentVariantId, next <= 0 ? 0 : Math.min(next, maxQty));
+  }
+
+  /**
+   * Le panier est déjà constitué : « Commander » ne fait que passer à la caisse.
+   * Il n'ajoute plus le produit affiché au passage — c'est ce qui rendait le
+   * montant du bouton incompréhensible (prix affiché ≠ total facturé).
+   */
   function handleCommander() {
-    if (isOutOfStock && cartCount === 0) return;
-    if (!isOutOfStock && !alreadyInCart) addCurrentToCart();
+    if (cartCount === 0) return;
     navigate(`/s/${saleSlug}/checkout`, { state: { liveId: activeLiveId ?? null } });
+  }
+
+  function handleClearAll() {
+    clearFor(saleSlug);
+    setCartOpen(false);
   }
 
   // ── Rendu ───────────────────────────────────────────────────────────────────
@@ -405,29 +425,11 @@ export function StoryCatalogue({
             {paused && (
               <Pause className="h-3.5 w-3.5 text-white/70" fill="currentColor" strokeWidth={0} />
             )}
+            {/* Le panier n'est plus ici : il vit dans la barre du bas, où il est
+                à la fois lisible (nombre + total) et manipulable. */}
             <span className="text-xs font-semibold text-white/70 tabular-nums">
               Produit {productIdx + 1} / {products.length}
             </span>
-
-            {/* Panier — contrôle persistant en haut à droite, façon story.
-                Ajoute le produit courant sans quitter la vue. */}
-            <button
-              onClick={handleAjouter}
-              disabled={isOutOfStock}
-              aria-label="Ajouter au panier et continuer à parcourir"
-              className="pointer-events-auto relative h-9 w-9 rounded-full bg-black/35 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/55 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all"
-            >
-              {justAdded ? (
-                <Check className="h-4 w-4 text-emerald-400" />
-              ) : (
-                <ShoppingCart className="h-4 w-4" />
-              )}
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4.5 min-w-4.5 px-1 rounded-full bg-gold text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-black/50">
-                  {cartCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
 
@@ -447,6 +449,13 @@ export function StoryCatalogue({
               </span>
               <span className="text-lg font-semibold text-white/80">F CFA</span>
             </div>
+            {/* Le stock ne s'affiche qu'à l'approche de la rupture : au-delà,
+                c'est du bruit sur un écran qu'on veut garder nu. */}
+            {!isOutOfStock && maxQty > 0 && maxQty <= 5 && (
+              <div className="mt-2 inline-flex items-center rounded-full bg-white/12 px-2.5 py-1 text-[11px] font-bold text-white/80">
+                Il reste {maxQty}
+              </div>
+            )}
           </div>
 
           {/* Variantes */}
@@ -470,9 +479,11 @@ export function StoryCatalogue({
                             disabled={disabled}
                             aria-pressed={active}
                             onClick={() => {
+                              // Chaque variante a sa propre ligne de panier :
+                              // changer de taille rebascule le bouton sur
+                              // « Ajouter » ou sur le compteur de cette taille.
                               setInteracted(true);
                               setSelectedByType((prev) => new Map(prev).set(type, v));
-                              setQty(1);
                             }}
                             className={`min-w-[46px] h-11 px-3.5 rounded-2xl text-sm font-bold transition-all ${
                               active
@@ -493,58 +504,93 @@ export function StoryCatalogue({
             </div>
           )}
 
-          {/* Quantité */}
-          {!isOutOfStock && (
-            <div>
-              <div className="text-[11px] font-bold text-white/45 uppercase tracking-[0.12em] mb-1.5">
-                Quantité
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => { setInteracted(true); setQty((q) => Math.max(1, q - 1)); }}
-                  disabled={qty <= 1}
-                  aria-label="Réduire la quantité"
-                  className="h-11 w-11 rounded-2xl bg-white/12 flex items-center justify-center text-white disabled:opacity-25 hover:bg-white/20 transition-colors"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="min-w-[2ch] text-center text-lg font-bold text-white tabular-nums">
-                  {qty}
-                </span>
-                <button
-                  onClick={() => { setInteracted(true); setQty((q) => Math.min(maxQty, q + 1)); }}
-                  disabled={qty >= maxQty}
-                  aria-label="Augmenter la quantité"
-                  className="h-11 w-11 rounded-2xl bg-forest-400 flex items-center justify-center text-white disabled:opacity-25 hover:bg-forest transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* CTA — action d'achat en un tap. L'ajout au panier sans quitter la
-              vue se fait par le bouton panier en haut à droite. */}
-          {isOutOfStock && cartCount === 0 ? (
+          {/* ── Action produit : ne concerne QUE la photo affichée ── */}
+          {isOutOfStock ? (
             <button
               disabled
               className="w-full h-14 rounded-full bg-white/10 text-white/40 font-semibold text-base"
             >
               Rupture de stock
             </button>
+          ) : currentLine ? (
+            /* Déjà au panier : le bouton devient le compteur de cette ligne. */
+            <div className="w-full h-14 rounded-full bg-white/12 flex items-center justify-between px-2">
+              <button
+                onClick={() => setCurrentQty(currentLine.quantity - 1)}
+                aria-label="Réduire la quantité"
+                className="h-11 w-11 rounded-full bg-white/15 flex items-center justify-center text-white hover:bg-white/25 active:scale-95 transition-all"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <div className="flex flex-col items-center leading-none">
+                <span className="text-lg font-bold text-white tabular-nums">
+                  {currentLine.quantity}
+                </span>
+                {justAdded ? (
+                  <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                    <Check className="h-3 w-3" />
+                    Ajouté
+                  </span>
+                ) : (
+                  <span className="mt-1 text-[11px] font-semibold text-white/45">au panier</span>
+                )}
+              </div>
+              <button
+                onClick={() => setCurrentQty(currentLine.quantity + 1)}
+                disabled={currentLine.quantity >= maxQty}
+                aria-label="Augmenter la quantité"
+                className="h-11 w-11 rounded-full bg-white/15 flex items-center justify-center text-white disabled:opacity-25 hover:bg-white/25 active:scale-95 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
           ) : (
             <button
-              onClick={handleCommander}
-              className="w-full h-14 rounded-full bg-forest-400 text-white text-base font-semibold flex items-center justify-center gap-2.5 active:scale-[0.98] hover:bg-forest transition-all shadow-lg shadow-black/30"
+              onClick={handleAjouter}
+              className="w-full h-14 rounded-full bg-white text-neutral-900 text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] hover:bg-white/90 transition-all shadow-lg shadow-black/30"
             >
-              <ShoppingCart className="h-5 w-5 flex-shrink-0" />
-              <span>Commander</span>
-              {cartCount > 0 && (
-                <span className="font-normal text-white/70 truncate">· {formatCfa(cartTotalCfa)}</span>
-              )}
+              <Plus className="h-5 w-5 flex-shrink-0" strokeWidth={2.5} />
+              Ajouter
             </button>
           )}
+
+          {/* ── Barre panier : ne concerne QUE la commande en cours ── */}
+          {cartCount > 0 && (
+            <div className="flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm p-1.5 pl-4">
+              <button
+                onClick={() => setCartOpen(true)}
+                aria-label="Voir le détail de mon panier"
+                className="flex flex-1 min-w-0 items-center gap-2.5 text-left"
+              >
+                <ShoppingCart className="h-4 w-4 text-white/70 flex-shrink-0" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold text-white truncate tabular-nums">
+                    {formatCfa(cartTotalCfa)}
+                  </span>
+                  <span className="block text-[11px] text-white/45 truncate">
+                    {cartCount} article{cartCount > 1 ? 's' : ''} · voir mon panier
+                  </span>
+                </span>
+                <ChevronUp className="h-4 w-4 text-white/35 flex-shrink-0" />
+              </button>
+              <button
+                onClick={handleCommander}
+                className="h-11 px-5 rounded-full bg-forest-400 text-white text-sm font-semibold hover:bg-forest active:scale-95 transition-all flex-shrink-0"
+              >
+                Commander
+              </button>
+            </div>
+          )}
         </div>
+
+        <CartSheet
+          open={cartOpen}
+          items={cartItems}
+          totalCfa={cartTotalCfa}
+          onClose={() => setCartOpen(false)}
+          onCommander={handleCommander}
+          onClearAll={handleClearAll}
+        />
       </div>
     </div>
   );

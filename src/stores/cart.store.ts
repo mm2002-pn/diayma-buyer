@@ -19,6 +19,11 @@ interface CartState {
   remove: (productId: number, variantId: number | null) => void;
   updateQty: (productId: number, variantId: number | null, qty: number) => void;
   clear: () => void;
+  /**
+   * Vide le panier d'une seule boutique. Le panier est partagé entre boutiques :
+   * `clear()` effacerait aussi ce que l'acheteuse a mis de côté ailleurs.
+   */
+  clearFor: (saleSlug: string) => void;
   totalCfa: () => number;
   count: () => number;
   itemsFor: (saleSlug: string) => CartItem[];
@@ -58,6 +63,8 @@ export const useCart = create<CartState>()(
             .filter((i) => i.quantity > 0),
         })),
       clear: () => set({ items: [] }),
+      clearFor: (saleSlug) =>
+        set((s) => ({ items: s.items.filter((i) => i.saleSlug !== saleSlug) })),
       totalCfa: () => get().items.reduce((acc, i) => acc + i.priceCfa * i.quantity, 0),
       count: () => get().items.reduce((acc, i) => acc + i.quantity, 0),
       itemsFor: (saleSlug) => get().items.filter((i) => i.saleSlug === saleSlug),
