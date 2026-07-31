@@ -175,11 +175,13 @@ export function CheckoutPage() {
                   )}
                   <div className="text-xs text-slate-400 mt-1">{formatCfa(i.priceCfa)} / unité</div>
                   {isOutOfStock && (
-                    <div className="text-xs text-red-500 font-semibold mt-0.5">Rupture de stock</div>
+                    <div className="text-xs text-red-500 font-semibold mt-0.5">
+                      Plus disponible — appuie sur − pour retirer
+                    </div>
                   )}
                   {isOverStock && !isOutOfStock && (
                     <div className="text-xs text-red-500 font-semibold mt-0.5">
-                      Stock disponible : {stock}
+                      Seulement {stock} en stock — réduis la quantité
                     </div>
                   )}
                 </div>
@@ -243,11 +245,27 @@ export function CheckoutPage() {
         </div>
 
         {/* Bannière stock insuffisant */}
-        {hasStockIssue && (
-          <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 font-medium">
-            Certains articles dépassent le stock disponible. Ajuste les quantités pour continuer.
-          </div>
-        )}
+        {hasStockIssue && (() => {
+          const outItems = items.filter((i) => getStock(i.productId, i.variantId) === 0);
+          const overItems = items.filter((i) => {
+            const s = getStock(i.productId, i.variantId);
+            return s !== Infinity && s > 0 && i.quantity > s;
+          });
+          const total = outItems.length + overItems.length;
+          const parts: string[] = [];
+          if (outItems.length > 0)
+            parts.push(`${outItems.length} en rupture à retirer`);
+          if (overItems.length > 0)
+            parts.push(`${overItems.length} à réduire`);
+          return (
+            <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 font-medium flex gap-2 items-start">
+              <span className="mt-0.5 flex-shrink-0">⚠</span>
+              <span>
+                {total} article{total > 1 ? 's' : ''} en rouge ({parts.join(', ')}) — corrige-les pour continuer.
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Phone */}
         <div>
