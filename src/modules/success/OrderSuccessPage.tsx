@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Check, Truck, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 import { useCart } from '@/stores/cart.store';
@@ -74,21 +74,6 @@ export function OrderSuccessPage() {
           </p>
         </motion.div>
 
-        {/* Delivery card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.38 }}
-          className="w-full max-w-xs bg-slate-50 border border-slate-100 rounded-3xl p-6 flex flex-col items-center gap-3"
-        >
-          <div className="h-14 w-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center">
-            <Truck className="h-7 w-7 text-[#C9A84C]" />
-          </div>
-          <div>
-            <div className="font-display text-2xl font-medium text-slate-900 tracking-tight">Livré en 24h</div>
-            <div className="text-xs text-slate-400 font-medium mt-0.5">Partout à Dakar</div>
-          </div>
-        </motion.div>
       </div>
 
       {/* Actions */}
