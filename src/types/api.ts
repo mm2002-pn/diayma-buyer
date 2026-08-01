@@ -15,6 +15,7 @@ export interface SellerBrief {
   saleSlug: string | null;
   city: string | null;
   avatarUrl?: string | null;
+  shopMode?: 'STORY' | 'ECOMMERCE';
 }
 
 export interface Product {

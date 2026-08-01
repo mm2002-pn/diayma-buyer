@@ -5,11 +5,14 @@ import { ImageOff, Loader2, PackageOpen, RotateCw } from 'lucide-react';
 
 import { shopApi } from './shop.api';
 import { StoryCatalogue } from './StoryCatalogue';
+import { EcommerceDesktop } from './EcommerceDesktop';
 import { useShopSocket } from '@/hooks/useShopSocket';
+import { useIsDesktop } from '@/lib/useIsDesktop';
 
 export function CatalogPage() {
   const { saleSlug } = useParams<{ saleSlug: string }>();
   const [jumpToProductId, setJumpToProductId] = useState<number | null>(null);
+  const isDesktop = useIsDesktop();
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['shop', saleSlug],
@@ -27,8 +30,8 @@ export function CatalogPage() {
 
   useShopSocket(
     saleSlug,
-    () => { void livesQuery.refetch(); },
-    () => { void livesQuery.refetch(); },
+    () => { void livesQuery.refetch(); void refetch(); },
+    () => { void livesQuery.refetch(); void refetch(); },
     (featuredProductId) => { setJumpToProductId(featuredProductId); },
   );
 
@@ -88,6 +91,18 @@ export function CatalogPage() {
   const activeLive = (livesQuery.data ?? []).find(
     (l) => l.sellerId === seller.id && l.status === 'LIVE',
   );
+
+  if (isDesktop && seller.shopMode === 'ECOMMERCE') {
+    return (
+      <EcommerceDesktop
+        seller={seller}
+        products={products}
+        saleSlug={saleSlug!}
+        liveActive={!!activeLive}
+        activeLiveId={activeLive?.id ?? null}
+      />
+    );
+  }
 
   return (
     <StoryCatalogue

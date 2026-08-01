@@ -487,7 +487,7 @@ export function StoryCatalogue({
                             }}
                             className={`min-w-[46px] h-11 px-3.5 rounded-2xl text-sm font-bold transition-all ${
                               active
-                                ? 'bg-forest-400 text-white'
+                                ? 'bg-[#C9A84C] text-white'
                                 : disabled
                                 ? 'bg-white/5 text-white/25 line-through'
                                 : 'bg-white/12 text-white hover:bg-white/20'
@@ -575,7 +575,7 @@ export function StoryCatalogue({
               </button>
               <button
                 onClick={handleCommander}
-                className="h-11 px-5 rounded-full bg-forest-400 text-white text-sm font-semibold hover:bg-forest active:scale-95 transition-all flex-shrink-0"
+                className="h-11 px-5 rounded-full bg-[#C9A84C] text-white text-sm font-semibold hover:bg-[#B8945F] active:scale-95 transition-all flex-shrink-0"
               >
                 Commander
               </button>

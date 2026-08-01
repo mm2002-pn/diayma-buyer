@@ -11,7 +11,7 @@ const SOCKET_URL = env.API_URL.replace('/api/v1', '');
 export function createOrderSocket(orderId: number): Socket {
   return io(SOCKET_URL, {
     auth: { orderId },
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'],
     autoConnect: true,
   });
 }
@@ -23,7 +23,7 @@ export function createOrderSocket(orderId: number): Socket {
 export function createShopSocket(saleSlug: string): Socket {
   return io(SOCKET_URL, {
     query: { saleSlug },
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'],
     autoConnect: true,
   });
 }
