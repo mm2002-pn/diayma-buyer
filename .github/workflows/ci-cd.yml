@@ -47,10 +47,10 @@ jobs:
           path: dist/
 
       - name: Deploy to Netlify staging
-        run: npx netlify-cli deploy --dir=dist --alias=staging --message="staging deploy"
+        run: npx netlify-cli deploy --dir=dist --prod --message="staging deploy"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_STAGING }}
 
   # ─── Deploy Production ────────────────────────────────────────────────────────
   deploy-prod:
